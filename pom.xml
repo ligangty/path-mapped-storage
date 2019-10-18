@@ -26,7 +26,7 @@
         <version>15</version>
     </parent>
 
-    <groupId>org.commonjava</groupId>
+    <groupId>org.commonjava.util</groupId>
     <artifactId>path-mapped-storage</artifactId>
     <version>0.1-SNAPSHOT</version>
 
@@ -45,7 +45,7 @@
         <projectOwner>Red Hat, Inc.</projectOwner>
         <projectEmail>nos-devel@redhat.com</projectEmail>
         <javaVersion>1.8</javaVersion>
-
+        <test-forkCount>1</test-forkCount>
         <datastaxVersion>3.7.2</datastaxVersion>
         <cassandraUnitVersion>3.7.1.0</cassandraUnitVersion>
         <hibernateVersion>5.4.4.Final</hibernateVersion>

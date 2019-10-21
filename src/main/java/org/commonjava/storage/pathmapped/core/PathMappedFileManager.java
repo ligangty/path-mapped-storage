@@ -12,7 +12,6 @@ import java.io.OutputStream;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.stream.Collectors;
 
 public class PathMappedFileManager
 {
@@ -63,18 +62,18 @@ public class PathMappedFileManager
     {
     }
 
-    // append '/' to directory names
+    // append '/' to directory names if not has
     public String[] list( String fileSystem, String path )
     {
         List<PathMap> paths = pathDB.list( fileSystem, path );
         return paths.stream().map( x -> {
             String p = x.getFilename();
-            if ( x.getFileId() == null )
+            if ( x.getFileId() == null && !p.endsWith( "/" ) )
             {
                 p += "/";
             }
             return p;
-        } ).collect( Collectors.toList() ).toArray( new String[0] );
+        } ).toArray( String[]::new );
     }
 
     public int getFileLength( String fileSystem, String path )

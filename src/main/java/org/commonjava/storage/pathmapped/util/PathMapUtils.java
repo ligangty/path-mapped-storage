@@ -15,6 +15,9 @@ public class PathMapUtils
     // looks weird but it splits "/path/to/my/file" -> [/][path/][to/][my/][file]
     private final static String EMPTY_CHAR_AFTER_SLASH = "(?<=/)";
 
+    /**
+     * Retrieve parent for the specified path. Prepend "/" if have not, and remove trailing "/" if have.
+     */
     public static String getParentPath( String path )
     {
         if ( ROOT_DIR.equals( path ) )
@@ -36,6 +39,10 @@ public class PathMapUtils
         if ( ret.length() <= 0 )
         {
             ret = ROOT_DIR;
+        }
+        if ( !ret.startsWith( "/" ) )
+        {
+            ret = "/" + ret;
         }
         return ret;
     }

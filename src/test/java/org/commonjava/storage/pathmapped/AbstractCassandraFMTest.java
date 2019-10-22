@@ -24,6 +24,7 @@ import org.commonjava.storage.pathmapped.config.DefaultPathMappedStorageConfig;
 import org.commonjava.storage.pathmapped.core.FileBasedPhysicalStore;
 import org.commonjava.storage.pathmapped.core.PathMappedFileManager;
 import org.commonjava.storage.pathmapped.datastax.CassandraPathDB;
+import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Rule;
@@ -71,5 +72,10 @@ public abstract class AbstractCassandraFMTest {
 		File baseDir = temp.newFolder();
 		fileManager = new PathMappedFileManager( new DefaultPathMappedStorageConfig(), pathDB,
 												 new FileBasedPhysicalStore( baseDir ) );
+	}
+
+	@AfterClass
+	public static void shutDownCassandra() {
+		EmbeddedCassandraServerHelper.cleanEmbeddedCassandra();
 	}
 }

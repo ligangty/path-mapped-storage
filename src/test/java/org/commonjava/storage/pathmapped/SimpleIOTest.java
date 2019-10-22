@@ -17,7 +17,6 @@ package org.commonjava.storage.pathmapped;
 
 import ch.qos.logback.core.util.FileSize;
 import org.apache.commons.io.IOUtils;
-import org.junit.Ignore;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -32,18 +31,15 @@ import java.nio.file.Paths;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Random;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.Executor;
-import java.util.concurrent.Executors;
-import java.util.concurrent.atomic.AtomicInteger;
 
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.hasItems;
+import static org.hamcrest.CoreMatchers.notNullValue;
+import static org.hamcrest.CoreMatchers.nullValue;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertThat;
-import static org.junit.Assert.fail;
 
-public class SimpleFileIOTest
+public class SimpleIOTest
         extends AbstractCassandraFMTest
 {
 
@@ -69,20 +65,20 @@ public class SimpleFileIOTest
     }
 
     @Test
-    public void readExisting1MbFile()
+    public void read1MbFile()
             throws Exception
     {
-        assertReadOfExistingFileOfSize( "1mb" );
+        assertReadFileOfSize( "1mb" );
     }
 
     @Test
-    public void readExisting11MbFile()
+    public void read11MbFile()
             throws Exception
     {
-        assertReadOfExistingFileOfSize( "11mb" );
+        assertReadFileOfSize( "11mb" );
     }
 
-    private void assertReadOfExistingFileOfSize( String s )
+    private void assertReadFileOfSize( String s )
             throws IOException
     {
         File f = temp.newFile( "read-target.txt" );
@@ -188,57 +184,61 @@ public class SimpleFileIOTest
     }
 
     @Test
-    public void concurrentRead()
-            throws IOException, InterruptedException
+    public void deleteFile()
+            throws IOException
     {
-        File f = temp.newFile( "read-target.txt" );
-        String src = "This is a test";
-        try (OutputStream os = fileManager.openOutputStream( TEST_FS, f.getPath() ))
+        final File f = temp.newFile();
+        String str = "This is a test";
+        try (InputStream is = fileManager.openInputStream( TEST_FS, f.getPath() ))
         {
-            assertNotNull( os );
-            IOUtils.write( src.getBytes(), os );
+            assertThat( is, nullValue() );
         }
-
-        final int runs = 10;
-        Executor executor = Executors.newFixedThreadPool( runs );
-        final CountDownLatch latch = new CountDownLatch( runs );
-        AtomicInteger failures = new AtomicInteger( 0 );
-        for ( int i = 0; i < runs; i++ )
+        writeWithContent( fileManager.openOutputStream( TEST_FS, f.getPath() ), str );
+        try (InputStream is = fileManager.openInputStream( TEST_FS, f.getPath() ))
         {
-            executor.execute( () -> {
-                try (InputStream is = fileManager.openInputStream( TEST_FS, f.getPath() ))
-                {
-                    assertNotNull( is );
-                    String result = new String( IOUtils.toByteArray( is ), Charset.defaultCharset() );
-                    if ( !src.equals( result ) )
-                    {
-                        failures.addAndGet( 1 );
-                    }
-                }
-                catch ( IOException e )
-                {
-                    failures.addAndGet( 1 );
-                }
-                finally
-                {
-                    latch.countDown();
-                }
-            } );
+            assertThat( is, notNullValue() );
         }
-        latch.await();
-        assertThat( failures.get(), equalTo( 0 ) );
+        assertThat( fileManager.delete( TEST_FS, f.getPath() ), equalTo( true ) );
+        try (InputStream is = fileManager.openInputStream( TEST_FS, f.getPath() ))
+        {
+            assertThat( is, nullValue() );
+        }
     }
 
     @Test
-    @Ignore
-    public void concurrentWrite()
+    public void existsFile()
+            throws IOException
     {
-        //TODO: Cassandra based fm does not guarantee concurrent write on same file.
-        //      Each single concurrent output will write its new file entry and the last successful
-        //      one will be used in future in concurrent mode
+        final File f = temp.newFile();
+        String str = "This is a test";
+        assertThat( fileManager.exists( TEST_FS, f.getPath() ), equalTo( false ) );
+        assertThat( fileManager.exists( TEST_FS, f.getPath() + "/" ), equalTo( false ) );
+        assertThat( fileManager.exists( TEST_FS, f.getParent() ), equalTo( false ) );
+        assertThat( fileManager.exists( TEST_FS, f.getParent() + "/" ), equalTo( false ) );
+        writeWithContent( fileManager.openOutputStream( TEST_FS, f.getPath() ), str );
+        assertThat( fileManager.exists( TEST_FS, f.getPath() ), equalTo( true ) );
+        assertThat( fileManager.exists( TEST_FS, f.getPath() + "/" ), equalTo( false ) );
+        assertThat( fileManager.exists( TEST_FS, f.getParent() ), equalTo( true ) );
+        assertThat( fileManager.exists( TEST_FS, f.getParent() + "/" ), equalTo( true ) );
+    }
 
-        //TODO: question: so does this mean there will be some dirty-read here? like write-read-write case?
-        fail( "concurrent write not support now!" );
+    @Test
+    public void fileAndDirectory()
+            throws IOException
+    {
+        final File f = temp.newFile();
+        String str = "This is a test";
+        assertThat( fileManager.isFile( TEST_FS, f.getPath() ), equalTo( false ) );
+        assertThat( fileManager.isDirectory( TEST_FS, f.getPath() ), equalTo( false ) );
+        assertThat( fileManager.isDirectory( TEST_FS, f.getPath() + "/" ), equalTo( false ) );
+        assertThat( fileManager.isDirectory( TEST_FS, f.getParent() ), equalTo( false ) );
+        assertThat( fileManager.isDirectory( TEST_FS, f.getParent() + "/" ), equalTo( false ) );
+        writeWithContent( fileManager.openOutputStream( TEST_FS, f.getPath() ), str );
+        assertThat( fileManager.isFile( TEST_FS, f.getPath() ), equalTo( true ) );
+        assertThat( fileManager.isDirectory( TEST_FS, f.getPath() ), equalTo( false ) );
+        assertThat( fileManager.isDirectory( TEST_FS, f.getPath() + "/" ), equalTo( false ) );
+        assertThat( fileManager.isDirectory( TEST_FS, f.getParent() ), equalTo( true ) );
+        assertThat( fileManager.isDirectory( TEST_FS, f.getParent() + "/" ), equalTo( true ) );
     }
 
     @Test

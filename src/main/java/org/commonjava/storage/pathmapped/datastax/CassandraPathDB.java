@@ -133,7 +133,7 @@ public class CassandraPathDB
     public long getFileLastModified( String fileSystem, String path )
     {
         PathMap pathMap = getPathMap( fileSystem, path );
-        if ( pathMap != null )
+        if ( pathMap != null && pathMap.getFileId() != null )
         {
             return pathMap.getCreation().getTime();
         }

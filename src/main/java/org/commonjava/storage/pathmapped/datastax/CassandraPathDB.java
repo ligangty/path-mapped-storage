@@ -99,10 +99,8 @@ public class CassandraPathDB
         ResultSet result =
                         session.execute( "SELECT * FROM " + keyspace + ".pathmap WHERE filesystem=? and parentpath=?;",
                                          fileSystem, path );
-        List<PathMap> list = new ArrayList<>();
         Result<DtxPathMap> ret = pathMapMapper.map( result );
-        ret.all().forEach( row -> list.add( row ) );
-        return list;
+        return new ArrayList<>( ret.all() );
     }
 
     @Override
@@ -287,7 +285,7 @@ public class CassandraPathDB
         // check parent paths
         String fromParentPath = getParentPath( fromPath );
         String toParentPath = getParentPath( toPath );
-        if ( !fromParentPath.equals( toParentPath ) )
+        if ( fromParentPath != null && !fromParentPath.equals( toParentPath ) )
         {
             makeDirs( toFileSystem, toParentPath );
         }
@@ -341,12 +339,8 @@ public class CassandraPathDB
         ResultSet result =
                         session.execute( "SELECT * FROM " + keyspace + ".reclaim WHERE partition = 0 AND deletion < ?;",
                                          threshold );
-        List<Reclaim> list = new ArrayList<>();
         Result<DtxReclaim> ret = reclaimMapper.map( result );
-        ret.all().forEach( row -> {
-            list.add( row );
-        } );
-        return list;
+        return new ArrayList<>( ret.all() );
     }
 
     @Override

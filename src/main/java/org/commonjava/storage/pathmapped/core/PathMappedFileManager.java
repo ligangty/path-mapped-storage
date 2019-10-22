@@ -88,12 +88,32 @@ public class PathMappedFileManager
 
     public boolean exists( String fileSystem, String path )
     {
-        return pathDB.exists( fileSystem, path );
+
+        boolean generalCheck = pathDB.exists( fileSystem, path );
+        // path is file or dir with trailing "/" and exists
+        if ( generalCheck )
+        {
+            return true;
+        }
+
+        // path is dir with trailing "/" and  not exists
+        if ( path.endsWith( "/" ) )
+        {
+            return false;
+        }
+
+        // double check if path is dir and if exists
+        return pathDB.exists( fileSystem, path + "/" );
     }
 
     public boolean isDirectory( String fileSystem, String path )
     {
-        return pathDB.isDirectory( fileSystem, path );
+        if ( path == null )
+        {
+            return false;
+        }
+        final String pathWithSlash = path.endsWith( "/" ) ? path : path + "/";
+        return pathDB.isDirectory( fileSystem, pathWithSlash );
     }
 
     public boolean isFile( String fileSystem, String path )

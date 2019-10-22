@@ -121,6 +121,11 @@ public class CassandraPathDB
         String parentPath = getParentPath( path );
         String filename = getFilename( path );
 
+        if ( parentPath == null || filename == null )
+        {
+            logger.debug( "getPathMap::null, parentPath:{}, filename:{}", parentPath, filename );
+            return null;
+        }
         return pathMapMapper.get( fileSystem, parentPath, filename );
     }
 
@@ -128,7 +133,7 @@ public class CassandraPathDB
     public long getFileLastModified( String fileSystem, String path )
     {
         PathMap pathMap = getPathMap( fileSystem, path );
-        if ( pathMap != null )
+        if ( pathMap != null && pathMap.getFileId() != null )
         {
             return pathMap.getCreation().getTime();
         }
@@ -138,6 +143,10 @@ public class CassandraPathDB
     @Override
     public boolean exists( String fileSystem, String path )
     {
+        if ( ROOT_DIR.equals( path ) )
+        {
+            return true;
+        }
         return getPathMap( fileSystem, path ) != null;
     }
 

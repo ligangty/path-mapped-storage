@@ -15,67 +15,87 @@
  */
 package org.commonjava.storage.pathmapped;
 
-import java.io.File;
-import java.util.HashMap;
-import java.util.Map;
-
 import org.cassandraunit.utils.EmbeddedCassandraServerHelper;
 import org.commonjava.storage.pathmapped.config.DefaultPathMappedStorageConfig;
 import org.commonjava.storage.pathmapped.core.FileBasedPhysicalStore;
 import org.commonjava.storage.pathmapped.core.PathMappedFileManager;
 import org.commonjava.storage.pathmapped.datastax.CassandraPathDB;
-import org.junit.AfterClass;
+import org.junit.After;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Rule;
 import org.junit.rules.TemporaryFolder;
 import org.junit.rules.TestName;
 
-import static org.commonjava.storage.pathmapped.util.CassandraPathDBUtils.*;
+import java.io.File;
+import java.util.HashMap;
+import java.util.Map;
 
-public abstract class AbstractCassandraFMTest {
+import static org.commonjava.storage.pathmapped.util.CassandraPathDBUtils.PROP_CASSANDRA_HOST;
+import static org.commonjava.storage.pathmapped.util.CassandraPathDBUtils.PROP_CASSANDRA_KEYSPACE;
+import static org.commonjava.storage.pathmapped.util.CassandraPathDBUtils.PROP_CASSANDRA_PORT;
 
-	static final int COUNT = 2000;
+public abstract class AbstractCassandraFMTest
+{
 
-	@Rule
-	public TemporaryFolder temp = new TemporaryFolder();
+    static final int COUNT = 2000;
 
-	@Rule
-	public TestName name = new TestName();
+    @Rule
+    public TemporaryFolder temp = new TemporaryFolder();
 
-	private static CassandraPathDB pathDB;
+    @Rule
+    public TestName name = new TestName();
 
-	PathMappedFileManager fileManager;
+    private static CassandraPathDB pathDB;
 
-	private static final String keyspace = "test";
+    PathMappedFileManager fileManager;
 
-	static final String TEST_FS = "test";
+    private static final String KEYSPACE = "test";
 
-	@BeforeClass
-	public static void startEmbeddedCassandra() throws Exception
-	{
-		EmbeddedCassandraServerHelper.startEmbeddedCassandra();
-		Map<String, Object> props = new HashMap<>();
-		props.put( PROP_CASSANDRA_HOST, "localhost" );
-		props.put( PROP_CASSANDRA_PORT, 9142 );
-		props.put( PROP_CASSANDRA_KEYSPACE, keyspace );
+    static final String TEST_FS = "test";
 
-		DefaultPathMappedStorageConfig config = new DefaultPathMappedStorageConfig( props );
-		pathDB = new CassandraPathDB( config );
+    private String baseStoragePath;
 
-	}
+    @BeforeClass
+    public static void startEmbeddedCassandra()
+            throws Exception
+    {
+        EmbeddedCassandraServerHelper.startEmbeddedCassandra();
+        Map<String, Object> props = new HashMap<>();
+        props.put( PROP_CASSANDRA_HOST, "localhost" );
+        props.put( PROP_CASSANDRA_PORT, 9142 );
+        props.put( PROP_CASSANDRA_KEYSPACE, KEYSPACE );
 
-	@Before
-	public void setup()
-			throws Exception
-	{
-		File baseDir = temp.newFolder();
-		fileManager = new PathMappedFileManager( new DefaultPathMappedStorageConfig(), pathDB,
-												 new FileBasedPhysicalStore( baseDir ) );
-	}
+        DefaultPathMappedStorageConfig config = new DefaultPathMappedStorageConfig( props );
+        // In test, we should let gc happened immediately when triggered.
+        config.setGcGracePeriodInHours( 0 );
+        pathDB = new CassandraPathDB( config );
 
-	@AfterClass
-	public static void shutDownCassandra() {
-		EmbeddedCassandraServerHelper.cleanEmbeddedCassandra();
-	}
+    }
+
+    String getBaseDir()
+    {
+        return baseStoragePath;
+    }
+
+    @Before
+    public void setup()
+            throws Exception
+    {
+        File baseDir = temp.newFolder();
+        baseStoragePath = baseDir.getCanonicalPath();
+        fileManager = new PathMappedFileManager( new DefaultPathMappedStorageConfig(), pathDB,
+                                                 new FileBasedPhysicalStore( baseDir ) );
+    }
+
+    @After
+    public void teardown()
+    {
+        clearData();
+        EmbeddedCassandraServerHelper.cleanDataEmbeddedCassandra( KEYSPACE );
+    }
+
+    protected void clearData()
+    {
+    }
 }

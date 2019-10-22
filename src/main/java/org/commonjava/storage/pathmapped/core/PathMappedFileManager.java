@@ -65,6 +65,10 @@ public class PathMappedFileManager
     // append '/' to directory names if not has
     public String[] list( String fileSystem, String path )
     {
+        if ( path == null )
+        {
+            return new String[] {};
+        }
         List<PathMap> paths = pathDB.list( fileSystem, path );
         return paths.stream().map( x -> {
             String p = x.getFilename();
@@ -78,16 +82,28 @@ public class PathMappedFileManager
 
     public int getFileLength( String fileSystem, String path )
     {
+        if ( path == null )
+        {
+            return 0;
+        }
         return pathDB.getFileLength( fileSystem, path );
     }
 
     public long getFileLastModified( String fileSystem, String path )
     {
+        if ( path == null )
+        {
+            return -1L;
+        }
         return pathDB.getFileLastModified( fileSystem, path );
     }
 
     public boolean exists( String fileSystem, String path )
     {
+        if ( path == null )
+        {
+            return false;
+        }
 
         boolean generalCheck = pathDB.exists( fileSystem, path );
         // path is file or dir with trailing "/" and exists
@@ -118,6 +134,10 @@ public class PathMappedFileManager
 
     public boolean isFile( String fileSystem, String path )
     {
+        if ( path == null )
+        {
+            return false;
+        }
         return pathDB.isFile( fileSystem, path );
     }
 
@@ -140,7 +160,7 @@ public class PathMappedFileManager
     {
         Map<FileInfo, Boolean> gcResults = new HashMap<>();
         List<Reclaim> reclaims = pathDB.listOrphanedFiles();
-        reclaims.stream().forEach( ( reclaim ) -> {
+        reclaims.forEach( ( reclaim ) -> {
             FileInfo fileInfo = new FileInfo();
             fileInfo.setFileId( reclaim.getFileId() );
             fileInfo.setFileStorage( reclaim.getStorage() );
@@ -149,7 +169,7 @@ public class PathMappedFileManager
             {
                 pathDB.removeFromReclaim( reclaim );
             }
-            gcResults.put( fileInfo, Boolean.valueOf( result ) );
+            gcResults.put( fileInfo, result );
         } );
         return gcResults;
     }

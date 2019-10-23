@@ -5,6 +5,8 @@ import org.commonjava.storage.pathmapped.model.PathMap;
 import org.commonjava.storage.pathmapped.model.Reclaim;
 import org.commonjava.storage.pathmapped.spi.PathDB;
 import org.commonjava.storage.pathmapped.spi.PhysicalStore;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -15,6 +17,8 @@ import java.util.Map;
 
 public class PathMappedFileManager
 {
+    private final Logger logger = LoggerFactory.getLogger( getClass() );
+
     private final PathDB pathDB;
 
     private final PhysicalStore physicalStore;
@@ -145,6 +149,7 @@ public class PathMappedFileManager
     {
         Map<FileInfo, Boolean> gcResults = new HashMap<>();
         List<Reclaim> reclaims = pathDB.listOrphanedFiles();
+        logger.debug( "Get reclaims for GC, size: {}", reclaims.size() );
         reclaims.forEach( ( reclaim ) -> {
             FileInfo fileInfo = new FileInfo();
             fileInfo.setFileId( reclaim.getFileId() );
@@ -152,6 +157,7 @@ public class PathMappedFileManager
             boolean result = physicalStore.delete( fileInfo );
             if ( result )
             {
+                logger.debug( "Delete from physicalStore, fileInfo: {}", fileInfo );
                 pathDB.removeFromReclaim( reclaim );
             }
             gcResults.put( fileInfo, result );

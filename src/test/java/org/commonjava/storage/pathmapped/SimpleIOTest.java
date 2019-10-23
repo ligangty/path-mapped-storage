@@ -373,7 +373,8 @@ public class SimpleIOTest
         assertThat( realFile.exists(), equalTo( true ) );
         assertThat( FileUtils.readFileToString( realFile ), equalTo( simpleContent ) );
         fileManager.delete( TEST_FS, path1 );
-        fileManager.gc();
+        Map<FileInfo, Boolean> ret = fileManager.gc();
+        logger.info( "GC result: {}", ret );
         assertThat( realFile.exists(), equalTo( false ) );
     }
 

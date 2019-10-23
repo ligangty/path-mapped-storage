@@ -138,6 +138,10 @@ public class CassandraPathDB
         return -1;
     }
 
+    /**
+     * Check if the specified path exist. If the path does not end with /, e.g., "foo/bar", we need to check both "foo/bar"
+     * and "foo/bar/".
+     */
     @Override
     public boolean exists( String fileSystem, String path )
     {
@@ -145,7 +149,13 @@ public class CassandraPathDB
         {
             return true;
         }
-        return getPathMap( fileSystem, path ) != null;
+        String parentPath = getParentPath( path );
+        String filename = getFilename( path );
+        ResultSet result = session.execute( "SELECT count(*) FROM " + keyspace
+                                                            + ".pathmap WHERE filesystem=? and parentpath=? and filename in (?,?);",
+                                            fileSystem, parentPath, filename, filename + "/" );
+        long count = result.one().get( 0, Long.class );
+        return count > 0;
     }
 
     @Override

@@ -236,6 +236,7 @@ public class CassandraPathDB
             return false;
         }
 
+        logger.debug( "Delete pathMap, {}", pathMap );
         pathMapMapper.delete( pathMap.getFileSystem(), pathMap.getParentPath(), pathMap.getFilename() );
 
         // update reverse map

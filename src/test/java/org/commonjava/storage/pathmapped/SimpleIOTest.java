@@ -16,7 +16,9 @@
 package org.commonjava.storage.pathmapped;
 
 import ch.qos.logback.core.util.FileSize;
+import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
+import org.commonjava.storage.pathmapped.core.FileInfo;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -26,10 +28,10 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.nio.charset.Charset;
-import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
 import java.util.Random;
 
 import static org.hamcrest.CoreMatchers.equalTo;
@@ -42,26 +44,70 @@ import static org.junit.Assert.assertThat;
 public class SimpleIOTest
         extends AbstractCassandraFMTest
 {
+    private final Logger logger = LoggerFactory.getLogger( getClass() );
+
+    private final String root = "/root";
+
+    private final String parent = "parent";
+
+    private final String pathParent = root + "/" + parent;
+
+    private final String sub1 = "sub1";
+
+    private final String sub2 = "sub2";
+
+    private final String pathSub1 = pathParent + "/" + sub1;
+
+    private final String pathSub2 = pathParent + "/" + sub2;
+
+    private final String file1 = "target1.txt";
+
+    private final String file2 = "target2.txt";
+
+    private final String path1 = pathSub1 + "/" + file1;
+
+    private final String path2 = pathSub2 + "/" + file2;
+
+    private final String simpleContent = "This is a test";
 
     @Test
     public void readWrittenFile()
             throws Exception
     {
-        File f = temp.newFile( "read-target.txt" );
-        String src = "This is a test";
-
-        try (OutputStream os = fileManager.openOutputStream( TEST_FS, f.getPath() ))
+        try (OutputStream os = fileManager.openOutputStream( TEST_FS, path1 ))
         {
             assertNotNull( os );
-            IOUtils.write( src.getBytes(), os );
+            IOUtils.write( simpleContent.getBytes(), os );
         }
 
-        try (InputStream is = fileManager.openInputStream( TEST_FS, f.getPath() ))
+        try (InputStream is = fileManager.openInputStream( TEST_FS, path1 ))
         {
             assertNotNull( is );
             String result = new String( IOUtils.toByteArray( is ), Charset.defaultCharset() );
-            assertThat( result, equalTo( src ) );
+            assertThat( result, equalTo( simpleContent ) );
         }
+    }
+
+    @Test
+    public void getRealFile()
+            throws Exception
+    {
+        readWrittenFile();
+        String realFilePath = fileManager.getFileStoragePath( TEST_FS, path1 );
+        assertThat( realFilePath, notNullValue() );
+        assertThat( FileUtils.readFileToString( Paths.get( getBaseDir(), realFilePath ).toFile() ),
+                    equalTo( simpleContent ) );
+    }
+
+    @Test
+    public void getFileMetadata()
+            throws Exception
+    {
+        assertThat( fileManager.getFileLength( TEST_FS, null ), equalTo( 0 ) );
+        assertThat( fileManager.getFileLastModified( TEST_FS, null ), equalTo( -1L ) );
+        readWrittenFile();
+        assertThat( fileManager.getFileLength( TEST_FS, path1 ), equalTo( simpleContent.length() ) );
+        assertThat( fileManager.getFileLastModified( TEST_FS, path1 ) > 0, equalTo( true ) );
     }
 
     @Test
@@ -81,19 +127,18 @@ public class SimpleIOTest
     private void assertReadFileOfSize( String s )
             throws IOException
     {
-        File f = temp.newFile( "read-target.txt" );
         int sz = (int) FileSize.valueOf( s ).getSize();
         byte[] src = new byte[sz];
 
         Random rand = new Random();
         rand.nextBytes( src );
 
-        try (OutputStream out = fileManager.openOutputStream( TEST_FS, f.getPath() ))
+        try (OutputStream out = fileManager.openOutputStream( TEST_FS, path1 ))
         {
             IOUtils.write( src, out );
         }
 
-        try (InputStream stream = fileManager.openInputStream( TEST_FS, f.getPath() ))
+        try (InputStream stream = fileManager.openInputStream( TEST_FS, path1 ))
         {
             byte[] result = IOUtils.toByteArray( stream );
             assertThat( result, equalTo( src ) );
@@ -104,16 +149,13 @@ public class SimpleIOTest
     public void writeToFileWithLines()
             throws Exception
     {
-        final File tempFile = temp.newFile();
 
-        writeWithCount( fileManager.openOutputStream( TEST_FS, tempFile.getPath() ) );
+        writeWithCount( fileManager.openOutputStream( TEST_FS, path1 ) );
 
-        final File file = new File( tempFile.getPath() );
-        System.out.println( "File length: " + file.length() );
-        try (InputStream is = fileManager.openInputStream( TEST_FS, tempFile.getPath() ))
+        final File file = new File( path1 );
+        try (InputStream is = fileManager.openInputStream( TEST_FS, path1 ))
         {
             final List<String> lines = IOUtils.readLines( is );
-            System.out.println( lines );
             assertThat( lines.size(), equalTo( COUNT ) );
         }
 
@@ -123,24 +165,22 @@ public class SimpleIOTest
     public void overwriteFile()
             throws Exception
     {
-        File f = temp.newFile();
-        try (OutputStream stream = fileManager.openOutputStream( TEST_FS, f.getPath() ))
+        try (OutputStream stream = fileManager.openOutputStream( TEST_FS, path1 ))
         {
             String longer = "This is a really really really long string";
             stream.write( longer.getBytes() );
         }
 
         String shorter = "This is a short string";
-        try (OutputStream stream = fileManager.openOutputStream( TEST_FS, f.getPath() ))
+        try (OutputStream stream = fileManager.openOutputStream( TEST_FS, path1 ))
         {
             stream.write( shorter.getBytes() );
         }
 
-        long fileLength = fileManager.getFileLength( TEST_FS, f.getPath() );
-        System.out.println( "File length: " + fileLength );
+        long fileLength = fileManager.getFileLength( TEST_FS, path1 );
         assertThat( fileLength, equalTo( (long) shorter.getBytes().length ) );
 
-        try (InputStream stream = fileManager.openInputStream( TEST_FS, f.getPath() ))
+        try (InputStream stream = fileManager.openInputStream( TEST_FS, path1 ))
         {
             String content = IOUtils.toString( stream );
             assertThat( content, equalTo( shorter ) );
@@ -152,26 +192,23 @@ public class SimpleIOTest
     public void fileRepeatedRead()
             throws Exception
     {
-        final File f = temp.newFile();
-        String str = "This is a test";
-        writeWithContent( fileManager.openOutputStream( TEST_FS, f.getPath() ), str );
+        writeWithContent( fileManager.openOutputStream( TEST_FS, path1 ), simpleContent );
         InputStream s1 = null;
         InputStream s2 = null;
 
-        Logger logger = LoggerFactory.getLogger( getClass() );
         try
         {
 
-            s1 = fileManager.openInputStream( TEST_FS, f.getPath() );
-            s2 = fileManager.openInputStream( TEST_FS, f.getPath() );
+            s1 = fileManager.openInputStream( TEST_FS, path1 );
+            s2 = fileManager.openInputStream( TEST_FS, path1 );
 
             logger.info( "READ first " );
             String out1 = IOUtils.toString( s1 );
             logger.info( "READ second " );
             String out2 = IOUtils.toString( s2 );
 
-            assertThat( "first reader returned wrong data", out1, equalTo( str ) );
-            assertThat( "second reader returned wrong data", out2, equalTo( str ) );
+            assertThat( "first reader returned wrong data", out1, equalTo( simpleContent ) );
+            assertThat( "second reader returned wrong data", out2, equalTo( simpleContent ) );
         }
         finally
         {
@@ -184,99 +221,160 @@ public class SimpleIOTest
     }
 
     @Test
-    public void deleteFile()
+    public void delete()
             throws IOException
     {
-        final File f = temp.newFile();
-        String str = "This is a test";
-        try (InputStream is = fileManager.openInputStream( TEST_FS, f.getPath() ))
+        try (InputStream is = fileManager.openInputStream( TEST_FS, path1 ))
         {
             assertThat( is, nullValue() );
         }
-        writeWithContent( fileManager.openOutputStream( TEST_FS, f.getPath() ), str );
-        try (InputStream is = fileManager.openInputStream( TEST_FS, f.getPath() ))
+        writeWithContent( fileManager.openOutputStream( TEST_FS, path1 ), simpleContent );
+        try (InputStream is = fileManager.openInputStream( TEST_FS, path1 ))
         {
             assertThat( is, notNullValue() );
         }
-        assertThat( fileManager.delete( TEST_FS, f.getPath() ), equalTo( true ) );
-        try (InputStream is = fileManager.openInputStream( TEST_FS, f.getPath() ))
+        assertThat( fileManager.delete( TEST_FS, path1 ), equalTo( true ) );
+        try (InputStream is = fileManager.openInputStream( TEST_FS, path1 ))
         {
             assertThat( is, nullValue() );
         }
+        //NOTE: not allow to delete a folder
+        assertThat( fileManager.delete( TEST_FS, pathSub1 + "/" ), equalTo( false ) );
+        assertPathWithChecker( ( f, p ) -> fileManager.exists( f, p ), TEST_FS, pathSub1, true );
     }
 
     @Test
-    public void existsFile()
+    public void existsFileOrDir()
             throws IOException
     {
-        final File f = temp.newFile();
-        String str = "This is a test";
-        assertThat( fileManager.exists( TEST_FS, f.getPath() ), equalTo( false ) );
-        assertThat( fileManager.exists( TEST_FS, f.getPath() + "/" ), equalTo( false ) );
-        assertThat( fileManager.exists( TEST_FS, f.getParent() ), equalTo( false ) );
-        assertThat( fileManager.exists( TEST_FS, f.getParent() + "/" ), equalTo( false ) );
-        writeWithContent( fileManager.openOutputStream( TEST_FS, f.getPath() ), str );
-        assertThat( fileManager.exists( TEST_FS, f.getPath() ), equalTo( true ) );
-        assertThat( fileManager.exists( TEST_FS, f.getPath() + "/" ), equalTo( false ) );
-        assertThat( fileManager.exists( TEST_FS, f.getParent() ), equalTo( true ) );
-        assertThat( fileManager.exists( TEST_FS, f.getParent() + "/" ), equalTo( true ) );
+        assertThat( fileManager.exists( TEST_FS, null ), equalTo( false ) );
+        final String tempRoot = "/temp-exists";
+        final String tempPathParent = tempRoot + "/" + parent;
+        final String tempPath = tempPathParent + "/" + file1;
+        assertPathWithChecker( ( f, p ) -> fileManager.exists( f, p ), TEST_FS, tempPath, false );
+        assertPathWithChecker( ( f, p ) -> fileManager.exists( f, p ), TEST_FS, tempPathParent, false );
+        assertPathWithChecker( ( f, p ) -> fileManager.exists( f, p ), TEST_FS, tempRoot, false );
+        writeWithContent( fileManager.openOutputStream( TEST_FS, tempPath ), simpleContent );
+        assertThat( fileManager.exists( TEST_FS, tempPath ), equalTo( true ) );
+        assertThat( fileManager.exists( TEST_FS, tempPath + "/" ), equalTo( false ) );
+        assertPathWithChecker( ( f, p ) -> fileManager.exists( f, p ), TEST_FS, tempPathParent, true );
+        assertPathWithChecker( ( f, p ) -> fileManager.exists( f, p ), TEST_FS, tempRoot, true );
     }
 
     @Test
-    public void fileAndDirectory()
+    public void isFileOrDir()
             throws IOException
     {
-        final File f = temp.newFile();
-        String str = "This is a test";
-        assertThat( fileManager.isFile( TEST_FS, f.getPath() ), equalTo( false ) );
-        assertThat( fileManager.isDirectory( TEST_FS, f.getPath() ), equalTo( false ) );
-        assertThat( fileManager.isDirectory( TEST_FS, f.getPath() + "/" ), equalTo( false ) );
-        assertThat( fileManager.isDirectory( TEST_FS, f.getParent() ), equalTo( false ) );
-        assertThat( fileManager.isDirectory( TEST_FS, f.getParent() + "/" ), equalTo( false ) );
-        writeWithContent( fileManager.openOutputStream( TEST_FS, f.getPath() ), str );
-        assertThat( fileManager.isFile( TEST_FS, f.getPath() ), equalTo( true ) );
-        assertThat( fileManager.isDirectory( TEST_FS, f.getPath() ), equalTo( false ) );
-        assertThat( fileManager.isDirectory( TEST_FS, f.getPath() + "/" ), equalTo( false ) );
-        assertThat( fileManager.isDirectory( TEST_FS, f.getParent() ), equalTo( true ) );
-        assertThat( fileManager.isDirectory( TEST_FS, f.getParent() + "/" ), equalTo( true ) );
+        assertThat( fileManager.isFile( TEST_FS, null ), equalTo( false ) );
+        assertThat( fileManager.isDirectory( TEST_FS, null ), equalTo( false ) );
+        final String tempRoot = "/temp-dir";
+        final String tempPathParent = tempRoot + "/" + parent;
+        final String tempPath = tempPathParent + "/" + file1;
+        assertThat( fileManager.isFile( TEST_FS, path1 ), equalTo( false ) );
+        assertPathWithChecker( ( f, p ) -> fileManager.isDirectory( f, p ), TEST_FS, tempPath, false );
+        assertPathWithChecker( ( f, p ) -> fileManager.isDirectory( f, p ), TEST_FS, tempPathParent, false );
+        assertPathWithChecker( ( f, p ) -> fileManager.isDirectory( f, p ), TEST_FS, tempRoot, false );
+        writeWithContent( fileManager.openOutputStream( TEST_FS, tempPath ), simpleContent );
+        assertThat( fileManager.isFile( TEST_FS, tempPath ), equalTo( true ) );
+        assertPathWithChecker( ( f, p ) -> fileManager.isDirectory( f, p ), TEST_FS, tempPath, false );
+        assertPathWithChecker( ( f, p ) -> fileManager.isDirectory( f, p ), TEST_FS, tempPathParent, true );
+        assertPathWithChecker( ( f, p ) -> fileManager.isDirectory( f, p ), TEST_FS, tempRoot, true );
+    }
+
+    @Test
+    public void makeDirs()
+    {
+        final String tempRoot = "/temp-dirs";
+        final String tempPathParent = tempRoot + "/" + parent;
+        final String tempPathSub = tempPathParent + "/" + sub1;
+        assertPathWithChecker( ( f, p ) -> fileManager.isDirectory( f, p ), TEST_FS, tempRoot, false );
+        assertPathWithChecker( ( f, p ) -> fileManager.isDirectory( f, p ), TEST_FS, tempPathParent, false );
+        assertPathWithChecker( ( f, p ) -> fileManager.isDirectory( f, p ), TEST_FS, tempPathSub, false );
+        fileManager.makeDirs( TEST_FS, tempPathSub );
+        assertPathWithChecker( ( f, p ) -> fileManager.isDirectory( f, p ), TEST_FS, tempRoot, true );
+        assertPathWithChecker( ( f, p ) -> fileManager.isDirectory( f, p ), TEST_FS, tempPathParent, true );
+        assertPathWithChecker( ( f, p ) -> fileManager.isDirectory( f, p ), TEST_FS, tempPathSub, true );
     }
 
     @Test
     public void listEntriesInSameFolder()
             throws IOException
     {
-        File f1 = temp.newFile( "f1.txt" );
-        File f2 = temp.newFile( "f2.txt" );
-        writeWithContent( fileManager.openOutputStream( TEST_FS, f1.getPath() ), "This is test f1" );
-        writeWithContent( fileManager.openOutputStream( TEST_FS, f2.getPath() ), "This is test f2" );
-        List<String> lists = Arrays.asList( fileManager.list( TEST_FS, temp.getRoot().getPath() ) );
-        assertThat( lists, hasItems( "f1.txt", "f2.txt" ) );
-
-        Path rootPath = Paths.get( temp.getRoot().toURI() );
-        lists = Arrays.asList( fileManager.list( TEST_FS, temp.getRoot().getParent() ) );
-        assertThat( lists, hasItems( rootPath.getName( rootPath.getNameCount() - 1 ).toString() + "/" ) );
+        List<String> lists = Arrays.asList( fileManager.list( TEST_FS, null ) );
+        assertThat( lists.isEmpty(), equalTo( true ) );
+        final String file3 = "target3.txt";
+        final String path3 = pathSub1 + "/" + file3;
+        writeWithContent( fileManager.openOutputStream( TEST_FS, path1 ), simpleContent );
+        writeWithContent( fileManager.openOutputStream( TEST_FS, path3 ), simpleContent );
+        lists = Arrays.asList( fileManager.list( TEST_FS, pathSub1 ) );
+        assertThat( lists, hasItems( file1, file3 ) );
+        lists = Arrays.asList( fileManager.list( TEST_FS, pathParent ) );
+        assertThat( lists, hasItems( sub1 + "/" ) );
     }
 
     @Test
     public void listEntriesInDiffFolders()
             throws IOException
     {
-        final File folder1 = temp.newFolder();
-        final File folder2 = temp.newFolder();
-        final Path folder1Path = Paths.get( folder1.toURI() );
-        final Path folder2Path = Paths.get( folder2.toURI() );
-        File f1 = folder1Path.resolve( "f1.txt" ).toFile();
-        File f2 = folder2Path.resolve( "f2.txt" ).toFile();
-        writeWithContent( fileManager.openOutputStream( TEST_FS, f1.getPath() ), "This is test f1" );
-        writeWithContent( fileManager.openOutputStream( TEST_FS, f2.getPath() ), "This is test f2" );
-        List<String> lists = Arrays.asList( fileManager.list( TEST_FS, temp.getRoot().getPath() ) );
-        assertThat( lists, hasItems( folder1Path.getName( folder1Path.getNameCount() - 1 ).toString() + "/",
-                                     folder2Path.getName( folder2Path.getNameCount() - 1 ).toString() + "/" ) );
+        writeWithContent( fileManager.openOutputStream( TEST_FS, path1 ), simpleContent );
+        writeWithContent( fileManager.openOutputStream( TEST_FS, path2 ), simpleContent );
+        List<String> lists = Arrays.asList( fileManager.list( TEST_FS, pathParent ) );
+        assertThat( lists, hasItems( sub1 + "/", sub2 + "/" ) );
 
-        lists = Arrays.asList( fileManager.list( TEST_FS, folder1.getPath() ) );
-        assertThat( lists, hasItems( "f1.txt" ) );
-        lists = Arrays.asList( fileManager.list( TEST_FS, folder2.getPath() ) );
-        assertThat( lists, hasItems( "f2.txt" ) );
+        lists = Arrays.asList( fileManager.list( TEST_FS, pathSub1 ) );
+        assertThat( lists, hasItems( file1 ) );
+        lists = Arrays.asList( fileManager.list( TEST_FS, pathSub2 ) );
+        assertThat( lists, hasItems( file2 ) );
+    }
+
+    @Test
+    public void listHugeNumOfEntries()
+            throws IOException
+    {
+        int numOfFiles = 500;
+        String[] files = new String[numOfFiles];
+        for ( int i = 0; i < numOfFiles; i++ )
+        {
+            files[i] = "file" + i + ".txt";
+            String filePath = pathSub1 + "/" + files[i];
+            writeWithContent( fileManager.openOutputStream( TEST_FS, filePath ), simpleContent );
+        }
+        long start = System.currentTimeMillis();
+        List<String> lists = Arrays.asList( fileManager.list( TEST_FS, pathSub1 ) );
+        assertThat( lists, hasItems( files ) );
+        long end = System.currentTimeMillis();
+        logger.info( "Listing {} files took {} milliseconds", numOfFiles, end - start );
+    }
+
+    @Test
+    public void simpleCopy()
+            throws IOException
+    {
+        final String TEMP_FS = "TEMP_FS";
+        assertThat( fileManager.exists( TEST_FS, path1 ), equalTo( false ) );
+        assertThat( fileManager.exists( TEMP_FS, path2 ), equalTo( false ) );
+        writeWithContent( fileManager.openOutputStream( TEST_FS, path1 ), simpleContent );
+        fileManager.copy( TEST_FS, path1, TEMP_FS, path2 );
+        assertThat( fileManager.exists( TEMP_FS, path2 ), equalTo( true ) );
+        try (InputStream is = fileManager.openInputStream( TEMP_FS, path2 ))
+        {
+            assertNotNull( is );
+            String result = new String( IOUtils.toByteArray( is ), Charset.defaultCharset() );
+            assertThat( result, equalTo( simpleContent ) );
+        }
+    }
+
+    @Test
+    public void gc()
+            throws Exception
+    {
+        readWrittenFile();
+        File realFile = Paths.get( getBaseDir(), fileManager.getFileStoragePath( TEST_FS, path1 ) ).toFile();
+        assertThat( realFile.exists(), equalTo( true ) );
+        assertThat( FileUtils.readFileToString( realFile ), equalTo( simpleContent ) );
+        fileManager.delete( TEST_FS, path1 );
+        fileManager.gc();
+        assertThat( realFile.exists(), equalTo( false ) );
     }
 
     private void writeWithCount( OutputStream stream )
@@ -304,6 +402,30 @@ public class SimpleIOTest
         catch ( IOException e )
         {
             e.printStackTrace();
+        }
+    }
+
+    @FunctionalInterface
+    private interface PathChecker<T>
+    {
+        T checkPath( String fileSystem, String path );
+    }
+
+    private void assertPathWithChecker( PathChecker<Boolean> checker, String fileSystem, String path, boolean expected )
+    {
+        assertThat( checker.checkPath( fileSystem, path ), equalTo( expected ) );
+        assertThat( checker.checkPath( fileSystem, path + "/" ), equalTo( expected ) );
+    }
+
+    @Override
+    protected void clearData()
+    {
+        super.clearData();
+        fileManager.delete( TEST_FS, path1 );
+        fileManager.delete( TEST_FS, path2 );
+        for ( Map.Entry<FileInfo, Boolean> entry : fileManager.gc().entrySet() )
+        {
+            logger.info( "{}", entry.getKey() );
         }
     }
 }

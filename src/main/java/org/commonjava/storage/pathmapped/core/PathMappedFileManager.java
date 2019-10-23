@@ -100,6 +100,10 @@ public class PathMappedFileManager
 
     public boolean exists( String fileSystem, String path )
     {
+        if ( path == null )
+        {
+            return false;
+        }
         return pathDB.exists( fileSystem, path );
     }
 

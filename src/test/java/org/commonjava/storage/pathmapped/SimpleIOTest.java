@@ -297,6 +297,15 @@ public class SimpleIOTest
     }
 
     @Test
+    public void listRootFolder()
+                    throws IOException
+    {
+        writeWithContent( fileManager.openOutputStream( TEST_FS, path1 ), simpleContent );
+        List<String> lists = Arrays.asList( fileManager.list( TEST_FS, "/" ) );
+        assertThat( lists, hasItems( "root/" ) );
+    }
+
+    @Test
     public void listEntriesInSameFolder()
             throws IOException
     {

@@ -9,13 +9,16 @@ import com.datastax.driver.mapping.Mapper;
 import com.datastax.driver.mapping.MappingManager;
 import com.datastax.driver.mapping.Result;
 import org.commonjava.storage.pathmapped.config.PathMappedStorageConfig;
+import org.commonjava.storage.pathmapped.datastax.model.DtxFileChecksum;
 import org.commonjava.storage.pathmapped.datastax.model.DtxPathMap;
 import org.commonjava.storage.pathmapped.datastax.model.DtxReclaim;
 import org.commonjava.storage.pathmapped.datastax.model.DtxReverseMap;
+import org.commonjava.storage.pathmapped.model.FileChecksum;
 import org.commonjava.storage.pathmapped.model.PathMap;
 import org.commonjava.storage.pathmapped.model.Reclaim;
 import org.commonjava.storage.pathmapped.model.ReverseMap;
 import org.commonjava.storage.pathmapped.spi.PathDB;
+import org.commonjava.storage.pathmapped.util.PathMapUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -25,7 +28,14 @@ import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 
-import static org.commonjava.storage.pathmapped.util.CassandraPathDBUtils.*;
+import static org.commonjava.storage.pathmapped.util.CassandraPathDBUtils.PROP_CASSANDRA_HOST;
+import static org.commonjava.storage.pathmapped.util.CassandraPathDBUtils.PROP_CASSANDRA_KEYSPACE;
+import static org.commonjava.storage.pathmapped.util.CassandraPathDBUtils.PROP_CASSANDRA_PORT;
+import static org.commonjava.storage.pathmapped.util.CassandraPathDBUtils.getSchemaCreateKeyspace;
+import static org.commonjava.storage.pathmapped.util.CassandraPathDBUtils.getSchemaCreateTableFileChecksum;
+import static org.commonjava.storage.pathmapped.util.CassandraPathDBUtils.getSchemaCreateTablePathmap;
+import static org.commonjava.storage.pathmapped.util.CassandraPathDBUtils.getSchemaCreateTableReclaim;
+import static org.commonjava.storage.pathmapped.util.CassandraPathDBUtils.getSchemaCreateTableReversemap;
 import static org.commonjava.storage.pathmapped.util.PathMapUtils.ROOT_DIR;
 import static org.commonjava.storage.pathmapped.util.PathMapUtils.getFilename;
 import static org.commonjava.storage.pathmapped.util.PathMapUtils.getParentPath;
@@ -48,6 +58,8 @@ public class CassandraPathDB
     private Mapper<DtxReverseMap> reverseMapMapper;
 
     private Mapper<DtxReclaim> reclaimMapper;
+
+    private Mapper<DtxFileChecksum> fileChecksumMapper;
 
     private final PathMappedStorageConfig config;
 
@@ -73,21 +85,24 @@ public class CassandraPathDB
         session.execute( getSchemaCreateTablePathmap( keyspace ) );
         session.execute( getSchemaCreateTableReversemap( keyspace ) );
         session.execute( getSchemaCreateTableReclaim( keyspace ) );
+        session.execute( getSchemaCreateTableFileChecksum( keyspace ) );
 
         MappingManager manager = new MappingManager( session );
 
         pathMapMapper = manager.mapper( DtxPathMap.class, keyspace );
         reverseMapMapper = manager.mapper( DtxReverseMap.class, keyspace );
         reclaimMapper = manager.mapper( DtxReclaim.class, keyspace );
+        fileChecksumMapper = manager.mapper( DtxFileChecksum.class, keyspace );
 
-        preparedSingleExistQuery = session.prepare( "SELECT count(*) FROM " + keyspace
-                                                                    + ".pathmap WHERE filesystem=? and parentpath=? and filename=?;" );
+        preparedSingleExistQuery = session.prepare(
+                "SELECT count(*) FROM " + keyspace + ".pathmap WHERE filesystem=? and parentpath=? and filename=?;" );
 
         preparedDoubleExistQuery = session.prepare( "SELECT count(*) FROM " + keyspace
-                                                                    + ".pathmap WHERE filesystem=? and parentpath=? and filename in (?,?);" );
+                                                            + ".pathmap WHERE filesystem=? and parentpath=? and filename in (?,?);" );
 
-        preparedListQuery = session.prepare(
-                        "SELECT * FROM " + keyspace + ".pathmap WHERE filesystem=? and parentpath=?;" );
+        preparedListQuery =
+                session.prepare( "SELECT * FROM " + keyspace + ".pathmap WHERE filesystem=? and parentpath=?;" );
+
     }
 
     @Override
@@ -179,7 +194,7 @@ public class CassandraPathDB
     }
 
     @Override
-    public void insert( String fileSystem, String path, Date date, String fileId, long size, String fileStorage )
+    public void insert( String fileSystem, String path, Date date, String fileId, long size, String fileStorage, String checksum )
     {
         DtxPathMap pathMap = new DtxPathMap();
         pathMap.setFileSystem( fileSystem );
@@ -191,11 +206,12 @@ public class CassandraPathDB
         pathMap.setFileId( fileId );
         pathMap.setFileStorage( fileStorage );
         pathMap.setSize( size );
-        insert( pathMap );
+        pathMap.setChecksum( checksum );
+        insert( pathMap, checksum );
     }
 
     @Override
-    public void insert( PathMap pathMap )
+    public void insert( PathMap pathMap, String checksum )
     {
         logger.debug( "Insert: {}", pathMap );
 
@@ -206,9 +222,29 @@ public class CassandraPathDB
 
         String path = normalize( parent, pathMap.getFilename() );
         PathMap prev = getPathMap( fileSystem, path );
-        if ( prev != null )
+        final boolean existedPathMap = prev != null;
+        if ( existedPathMap )
         {
             delete( fileSystem, path );
+        }
+
+        final FileChecksum existedChecksum = fileChecksumMapper.get( checksum );
+
+        if ( existedChecksum != null )
+        {
+            logger.info( "File checksum conflict, should use existed file storage" );
+            final String deprecatedStorage = pathMap.getFileStorage();
+            ( (DtxPathMap) pathMap ).setFileStorage( existedChecksum.getStorage() );
+            ( (DtxPathMap) pathMap ).setFileId( existedChecksum.getFileId() );
+            ( (DtxPathMap) pathMap ).setChecksum( existedChecksum.getChecksum() );
+            // Need to mark the generated file storage path as reclaimed to remove it.
+            final String deprecatedFileId = PathMapUtils.getRandomFileId();
+            reclaim( deprecatedFileId, deprecatedStorage );
+        }
+        else
+        {
+            logger.debug( "File checksum not exists, marked current file {} as primary", pathMap );
+            fileChecksumMapper.save( new DtxFileChecksum( checksum, pathMap.getFileId(), pathMap.getFileStorage() ) );
         }
 
         pathMapMapper.save( (DtxPathMap) pathMap );
@@ -273,13 +309,25 @@ public class CassandraPathDB
         logger.debug( "Delete pathMap, {}", pathMap );
         pathMapMapper.delete( pathMap.getFileSystem(), pathMap.getParentPath(), pathMap.getFilename() );
 
-        // update reverse map
+
         ReverseMap reverseMap = deleteFromReverseMap( pathMap.getFileId(), marshall( fileSystem, path ) );
         logger.debug( "Updated reverseMap, {}", reverseMap );
+
+        // need to check store checksum first to decide if
         if ( reverseMap == null || reverseMap.getPaths() == null || reverseMap.getPaths().isEmpty() )
         {
+            // clean checksum in checksum table as no file id refer to it.
+            FileChecksum checksum = fileChecksumMapper.get( pathMap.getChecksum() );
+            if ( checksum != null )
+            {
+                // update file checksum
+                logger.debug( "Delete file checksum, {}", checksum );
+                fileChecksumMapper.delete( checksum.getChecksum() );
+            }
+
             // reclaim, but not remove from reverse table immediately (for race-detection/double-check)
             reclaim( fileId, pathMap.getFileStorage() );
+
         }
         return true;
     }
@@ -343,7 +391,7 @@ public class CassandraPathDB
 
         String toFilename = getFilename( toPath );
         pathMapMapper.save( new DtxPathMap( toFileSystem, toParentPath, toFilename, pathMap.getFileId(),
-                                            pathMap.getCreation(), pathMap.getSize(), pathMap.getFileStorage() ) );
+                                            pathMap.getCreation(), pathMap.getSize(), pathMap.getFileStorage(), pathMap.getChecksum() ) );
         return true;
     }
 

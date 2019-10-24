@@ -33,11 +33,14 @@ public class DtxPathMap implements PathMap
     @Column
     private String fileStorage;
 
+    @Column
+    private String checksum;
+
     public DtxPathMap()
     {
     }
 
-    public DtxPathMap( String fileSystem, String parentPath, String filename, String fileId, Date creation, long size, String fileStorage )
+    public DtxPathMap( String fileSystem, String parentPath, String filename, String fileId, Date creation, long size, String fileStorage, String checksum )
     {
         this.fileSystem = fileSystem;
         this.parentPath = parentPath;
@@ -46,6 +49,7 @@ public class DtxPathMap implements PathMap
         this.creation = creation;
         this.size = size;
         this.fileStorage = fileStorage;
+        this.checksum = checksum;
     }
 
     public String getFileId()
@@ -116,6 +120,17 @@ public class DtxPathMap implements PathMap
     public void setFilename( String filename )
     {
         this.filename = filename;
+    }
+
+    @Override
+    public String getChecksum()
+    {
+        return checksum;
+    }
+
+    public void setChecksum( String checksum )
+    {
+        this.checksum = checksum;
     }
 
     @Override

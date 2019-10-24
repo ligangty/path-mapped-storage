@@ -24,6 +24,7 @@ public class CassandraPathDBUtils
                         + "creation timestamp,"
                         + "size bigint,"
                         + "filestorage varchar,"
+                        + "checksum varchar,"
                         + "PRIMARY KEY (filesystem, parentpath, filename)"
                         + ");";
     }
@@ -48,4 +49,13 @@ public class CassandraPathDBUtils
                         + ");";
     }
 
+    public static String getSchemaCreateTableFileChecksum( String keyspace )
+    {
+        return "CREATE TABLE IF NOT EXISTS " + keyspace + ".filechecksum ("
+                        + "checksum varchar,"
+                        + "fileid varchar,"
+                        + "storage varchar,"
+                        + "PRIMARY KEY (checksum)"
+                        + ");";
+    }
 }

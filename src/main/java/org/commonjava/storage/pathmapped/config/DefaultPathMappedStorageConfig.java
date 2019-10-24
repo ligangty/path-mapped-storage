@@ -11,11 +11,15 @@ public class DefaultPathMappedStorageConfig
 
     private final int DEFAULT_GC_GRACE_PERIOD_IN_HOURS = 24;
 
+    private final String DEFAULT_FILE_CHECKSUM_ALGORITHM = "MD5";
+
     private int gcGracePeriodInHours = DEFAULT_GC_GRACE_PERIOD_IN_HOURS;
 
     private int gcIntervalInMinutes = DEFAULT_GC_INTERVAL_IN_MINUTES;
 
     private int gcBatchSize = DEFAULT_GC_BATCH_SIZE;
+
+    private String fileChecksumAlgorithm = DEFAULT_FILE_CHECKSUM_ALGORITHM;
 
     public DefaultPathMappedStorageConfig()
     {
@@ -52,6 +56,17 @@ public class DefaultPathMappedStorageConfig
     public boolean isSubsystemEnabled( String fileSystem )
     {
         return false;
+    }
+
+    @Override
+    public String getFileChecksumAlgorithm()
+    {
+        return fileChecksumAlgorithm;
+    }
+
+    public void setFileChecksumAlgorithm( String fileChecksumAlgorithm )
+    {
+        this.fileChecksumAlgorithm = fileChecksumAlgorithm;
     }
 
     private Map<String, Object> properties;

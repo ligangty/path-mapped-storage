@@ -25,6 +25,9 @@ import java.util.List;
 public class JPAPathDB
                 implements PathDB
 {
+    //TODO: checksum dedupe is not implemented yet in JPAPathDB, will implement it later. Can refer the way of
+    //      CassandraPathDB to do this.
+
     private final Logger logger = LoggerFactory.getLogger( getClass() );
 
     private final EntityManagerFactory factory;
@@ -92,7 +95,7 @@ public class JPAPathDB
     }
 
     @Override
-    public void insert( String fileSystem, String path, Date date, String fileId, long size, String fileStorage )
+    public void insert( String fileSystem, String path, Date date, String fileId, long size, String fileStorage, String checksum )
     {
         JpaPathMap pathMap = new JpaPathMap();
         JpaPathKey pathKey = getPathKey( fileSystem, path );
@@ -101,11 +104,11 @@ public class JPAPathDB
         pathMap.setFileId( fileId );
         pathMap.setFileStorage( fileStorage );
         pathMap.setSize( size );
-        insert( pathMap );
+        insert( pathMap, checksum );
     }
 
     @Override
-    public void insert( PathMap pathMap )
+    public void insert( PathMap pathMap, String checksum )
     {
         logger.debug( "Insert: {}", pathMap );
 
@@ -261,9 +264,10 @@ public class JPAPathDB
             makeDirs( toFileSystem, toParentPath );
         }
 
+        //TODO: need to implement checksum de-dupe in future, and add checksum here
         transactionAnd( () -> {
             entitymanager.persist( new JpaPathMap( to, pathMap.getFileId(), pathMap.getCreation(), pathMap.getSize(),
-                                                   pathMap.getFileStorage() ) );
+                                                   pathMap.getFileStorage(), "" ) );
         } );
         return true;
     }

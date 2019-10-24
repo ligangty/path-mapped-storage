@@ -8,10 +8,9 @@
     </encoder>
   </appender>
 
-  <logger name="org.commonjava.util.partyline" level="TRACE" />
-  <logger name="org.commonjava.util.cdi.weft" level="TRACE" />
+  <logger name="org.commonjava.storage.pathmapped" level="TRACE" />
 
-  <root level="TRACE">
+  <root level="ERROR">
     <appender-ref ref="STDOUT" />
   </root>
 

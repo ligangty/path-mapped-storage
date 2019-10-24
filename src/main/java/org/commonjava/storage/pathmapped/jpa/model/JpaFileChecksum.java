@@ -10,7 +10,8 @@ import java.util.Objects;
 
 @Entity
 @Table( name = "filechecksum" )
-public class JpaFileChecksum implements FileChecksum
+public class JpaFileChecksum
+        implements FileChecksum
 {
     @Id
     private String checksum;
@@ -18,14 +19,18 @@ public class JpaFileChecksum implements FileChecksum
     @Column( name = "fileid" )
     private String fileId;
 
+    @Column( name = "storage" )
+    private String storage;
+
     public JpaFileChecksum()
     {
     }
 
-    public JpaFileChecksum( String checksum, String fileId )
+    public JpaFileChecksum( String checksum, String fileId, String storage )
     {
         this.checksum = checksum;
         this.fileId = fileId;
+        this.storage = storage;
     }
 
     public String getFileId()
@@ -49,12 +54,27 @@ public class JpaFileChecksum implements FileChecksum
     }
 
     @Override
+    public String getStorage()
+    {
+        return storage;
+    }
+
+    public void setStorage( String storage )
+    {
+        this.storage = storage;
+    }
+
+    @Override
     public boolean equals( Object o )
     {
         if ( this == o )
+        {
             return true;
+        }
         if ( o == null || getClass() != o.getClass() )
+        {
             return false;
+        }
         JpaFileChecksum that = (JpaFileChecksum) o;
         return checksum.equals( that.checksum );
     }

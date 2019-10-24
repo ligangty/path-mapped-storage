@@ -15,9 +15,13 @@
  */
 package org.commonjava.storage.pathmapped;
 
+import com.datastax.driver.core.Cluster;
+import com.datastax.driver.core.Session;
+import org.apache.commons.io.IOUtils;
 import org.cassandraunit.utils.EmbeddedCassandraServerHelper;
 import org.commonjava.storage.pathmapped.config.DefaultPathMappedStorageConfig;
 import org.commonjava.storage.pathmapped.core.FileBasedPhysicalStore;
+import org.commonjava.storage.pathmapped.core.FileInfo;
 import org.commonjava.storage.pathmapped.core.PathMappedFileManager;
 import org.commonjava.storage.pathmapped.datastax.CassandraPathDB;
 import org.junit.After;
@@ -26,17 +30,25 @@ import org.junit.BeforeClass;
 import org.junit.Rule;
 import org.junit.rules.TemporaryFolder;
 import org.junit.rules.TestName;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.File;
+import java.io.IOException;
+import java.io.OutputStream;
 import java.util.HashMap;
 import java.util.Map;
 
+import static java.lang.Thread.sleep;
 import static org.commonjava.storage.pathmapped.util.CassandraPathDBUtils.PROP_CASSANDRA_HOST;
 import static org.commonjava.storage.pathmapped.util.CassandraPathDBUtils.PROP_CASSANDRA_KEYSPACE;
 import static org.commonjava.storage.pathmapped.util.CassandraPathDBUtils.PROP_CASSANDRA_PORT;
 
 public abstract class AbstractCassandraFMTest
 {
+    final Logger logger = LoggerFactory.getLogger( getClass() );
+
+    static final long GC_WAIT_MS = 300;
 
     static final int COUNT = 2000;
 
@@ -57,6 +69,30 @@ public abstract class AbstractCassandraFMTest
     private String baseStoragePath;
 
     private static DefaultPathMappedStorageConfig config;
+
+    private final String root = "/root";
+
+    final String parent = "parent";
+
+    final String pathParent = root + "/" + parent;
+
+    final String sub1 = "sub1";
+
+    final String sub2 = "sub2";
+
+    final String pathSub1 = pathParent + "/" + sub1;
+
+    final String pathSub2 = pathParent + "/" + sub2;
+
+    final String file1 = "target1.txt";
+
+    final String file2 = "target2.txt";
+
+    final String path1 = pathSub1 + "/" + file1;
+
+    final String path2 = pathSub2 + "/" + file2;
+
+    final String simpleContent = "This is a test";
 
     @BeforeClass
     public static void startEmbeddedCassandra()
@@ -94,7 +130,61 @@ public abstract class AbstractCassandraFMTest
     public void teardown()
     {
         clearData();
-        EmbeddedCassandraServerHelper.cleanDataEmbeddedCassandra( KEYSPACE );
+        clearCommon();
+        cleanAllData();
+    }
+
+    private void cleanAllData()
+    {
+        String host = (String) config.getProperty( PROP_CASSANDRA_HOST );
+        int port = (Integer) config.getProperty( PROP_CASSANDRA_PORT );
+        Cluster cluster = Cluster.builder().withoutJMXReporting().addContactPoint( host ).withPort( port ).build();
+        Session session = cluster.connect();
+        session.execute( "TRUNCATE " + KEYSPACE + ".pathmap;" );
+        session.execute( "TRUNCATE " + KEYSPACE + ".reversemap;" );
+        session.execute( "TRUNCATE " + KEYSPACE + ".reclaim;" );
+        session.execute( "TRUNCATE " + KEYSPACE + ".filechecksum;" );
+    }
+
+    private void clearCommon(){
+        fileManager.delete( TEST_FS, path1 );
+        fileManager.delete( TEST_FS, path2 );
+        for ( Map.Entry<FileInfo, Boolean> entry : fileManager.gc().entrySet() )
+        {
+            logger.info( "{} has been swept by gc", entry.getKey() );
+        }
+        try
+        {
+            sleep( GC_WAIT_MS );
+        }
+        catch ( InterruptedException e )
+        {
+            e.printStackTrace();
+        }
+    }
+
+    void writeWithContent( OutputStream stream, String content )
+    {
+        try (OutputStream os = stream)
+        {
+            IOUtils.write( content.getBytes(), os );
+        }
+        catch ( IOException e )
+        {
+            e.printStackTrace();
+        }
+    }
+
+    void writeWithContent( String fileSystem, String path, String content )
+    {
+        try
+        {
+            writeWithContent( fileManager.openOutputStream( fileSystem, path ), content );
+        }
+        catch ( IOException e )
+        {
+            e.printStackTrace();
+        }
     }
 
     protected void clearData()

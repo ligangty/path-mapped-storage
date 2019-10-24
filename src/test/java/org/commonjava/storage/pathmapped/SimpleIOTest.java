@@ -20,8 +20,6 @@ import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
 import org.commonjava.storage.pathmapped.core.FileInfo;
 import org.junit.Test;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.io.File;
 import java.io.IOException;
@@ -45,31 +43,7 @@ import static org.junit.Assert.assertThat;
 public class SimpleIOTest
         extends AbstractCassandraFMTest
 {
-    private final Logger logger = LoggerFactory.getLogger( getClass() );
-
-    private final String root = "/root";
-
-    private final String parent = "parent";
-
-    private final String pathParent = root + "/" + parent;
-
-    private final String sub1 = "sub1";
-
-    private final String sub2 = "sub2";
-
-    private final String pathSub1 = pathParent + "/" + sub1;
-
-    private final String pathSub2 = pathParent + "/" + sub2;
-
-    private final String file1 = "target1.txt";
-
-    private final String file2 = "target2.txt";
-
-    private final String path1 = pathSub1 + "/" + file1;
-
-    private final String path2 = pathSub2 + "/" + file2;
-
-    private final String simpleContent = "This is a test";
+    private final String TEMP_FS = "TEMP_FS";
 
     @Test
     public void readWrittenFile()
@@ -107,7 +81,7 @@ public class SimpleIOTest
         assertThat( fileManager.getFileLength( TEST_FS, null ), equalTo( 0L ) );
         assertThat( fileManager.getFileLastModified( TEST_FS, null ), equalTo( -1L ) );
         readWrittenFile();
-        assertThat( fileManager.getFileLength( TEST_FS, path1 ), equalTo( (long)simpleContent.length() ) );
+        assertThat( fileManager.getFileLength( TEST_FS, path1 ), equalTo( (long) simpleContent.length() ) );
         assertThat( fileManager.getFileLastModified( TEST_FS, path1 ) > 0, equalTo( true ) );
     }
 
@@ -299,7 +273,7 @@ public class SimpleIOTest
 
     @Test
     public void listRootFolder()
-                    throws IOException
+            throws IOException
     {
         writeWithContent( fileManager.openOutputStream( TEST_FS, path1 ), simpleContent );
         List<String> lists = Arrays.asList( fileManager.list( TEST_FS, "/" ) );
@@ -360,7 +334,6 @@ public class SimpleIOTest
     public void simpleCopy()
             throws IOException
     {
-        final String TEMP_FS = "TEMP_FS";
         assertThat( fileManager.exists( TEST_FS, path1 ), equalTo( false ) );
         assertThat( fileManager.exists( TEMP_FS, path2 ), equalTo( false ) );
         writeWithContent( fileManager.openOutputStream( TEST_FS, path1 ), simpleContent );
@@ -383,7 +356,7 @@ public class SimpleIOTest
         assertThat( realFile.exists(), equalTo( true ) );
         assertThat( FileUtils.readFileToString( realFile ), equalTo( simpleContent ) );
         fileManager.delete( TEST_FS, path1 );
-        sleep( 1000 ); // so that gc is sure to removes it
+        sleep( GC_WAIT_MS ); // so that gc is sure to removes it
         Map<FileInfo, Boolean> ret = fileManager.gc();
         logger.info( "GC result: {}", ret );
         assertThat( realFile.exists(), equalTo( false ) );
@@ -405,18 +378,6 @@ public class SimpleIOTest
         }
     }
 
-    private void writeWithContent( OutputStream stream, String content )
-    {
-        try (OutputStream os = stream)
-        {
-            IOUtils.write( content.getBytes(), os );
-        }
-        catch ( IOException e )
-        {
-            e.printStackTrace();
-        }
-    }
-
     @FunctionalInterface
     private interface PathChecker<T>
     {
@@ -426,18 +387,14 @@ public class SimpleIOTest
     private void assertPathWithChecker( PathChecker<Boolean> checker, String fileSystem, String path, boolean expected )
     {
         assertThat( checker.checkPath( fileSystem, path ), equalTo( expected ) );
-//        assertThat( checker.checkPath( fileSystem, path + "/" ), equalTo( expected ) );
+        //        assertThat( checker.checkPath( fileSystem, path + "/" ), equalTo( expected ) );
     }
 
     @Override
     protected void clearData()
     {
         super.clearData();
-        fileManager.delete( TEST_FS, path1 );
-        fileManager.delete( TEST_FS, path2 );
-        for ( Map.Entry<FileInfo, Boolean> entry : fileManager.gc().entrySet() )
-        {
-            logger.info( "{}", entry.getKey() );
-        }
+        fileManager.delete( TEMP_FS, path1 );
+        fileManager.delete( TEMP_FS, path2 );
     }
 }

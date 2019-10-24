@@ -30,6 +30,7 @@ import static org.commonjava.storage.pathmapped.util.PathMapUtils.getParentPath;
 import static org.commonjava.storage.pathmapped.util.PathMapUtils.getParentsBottomUp;
 import static org.commonjava.storage.pathmapped.util.PathMapUtils.marshall;
 import static org.commonjava.storage.pathmapped.util.PathMapUtils.normalize;
+import static org.commonjava.storage.pathmapped.util.PathMapUtils.normalizeParentPath;
 
 public class CassandraPathDB
                 implements PathDB, Closeable
@@ -89,16 +90,15 @@ public class CassandraPathDB
         return session;
     }
 
+    /**
+     * List files under specified path.
+     */
     public List<PathMap> list( String fileSystem, String path )
     {
-        if ( path.endsWith( "/" ) )
-        {
-            path = path.substring( 0, path.length() - 1 );
-        }
-
+        String parentPath = normalizeParentPath( path );
         ResultSet result =
                         session.execute( "SELECT * FROM " + keyspace + ".pathmap WHERE filesystem=? and parentpath=?;",
-                                         fileSystem, path );
+                                         fileSystem, parentPath );
         Result<DtxPathMap> ret = pathMapMapper.map( result );
         return new ArrayList<>( ret.all() );
     }

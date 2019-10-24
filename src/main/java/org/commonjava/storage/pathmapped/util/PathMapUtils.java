@@ -20,7 +20,7 @@ public class PathMapUtils
      */
     public static String getParentPath( String path )
     {
-        if ( ROOT_DIR.equals( path ) )
+        if ( isRoot( path ) )
         {
             return null; // root have no parent path
         }
@@ -32,24 +32,39 @@ public class PathMapUtils
             sb.append( toks[i] );
         }
         String ret = sb.toString();
-        if ( ret.endsWith( "/" ) )
+        return normalizeParentPath( ret );
+    }
+
+    /**
+     * The specified path might be root, "org/", "/org/", and so on. In pathmapped table,
+     * we always prepend a "/" to parentPath and remove the trailing "/". I.e, for anything
+     * like "org/" or "/org/", the stored parentPath is "/org".
+     */
+    public static String normalizeParentPath( String path )
+    {
+        if ( isRoot( path ) )
         {
-            ret = ret.substring( 0, ret.length() - 1 ); // remove trailing /
+            return path;
         }
-        if ( ret.length() <= 0 )
+        if ( path.endsWith( "/" ) )
         {
-            ret = ROOT_DIR;
+            path = path.substring( 0, path.length() - 1 ); // remove trailing /
         }
-        if ( !ret.startsWith( "/" ) )
+        if ( !path.startsWith( "/" ) )
         {
-            ret = "/" + ret;
+            path = "/" + path;
         }
-        return ret;
+        return path;
+    }
+
+    public static boolean isRoot( String path )
+    {
+        return ROOT_DIR.equals( path );
     }
 
     public static String getFilename( String path )
     {
-        if ( ROOT_DIR.equals( path ) )
+        if ( isRoot( path ) )
         {
             return null;
         }

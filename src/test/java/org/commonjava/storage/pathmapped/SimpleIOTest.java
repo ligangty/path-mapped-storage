@@ -34,6 +34,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Random;
 
+import static java.lang.Thread.sleep;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.hasItems;
 import static org.hamcrest.CoreMatchers.notNullValue;
@@ -382,6 +383,7 @@ public class SimpleIOTest
         assertThat( realFile.exists(), equalTo( true ) );
         assertThat( FileUtils.readFileToString( realFile ), equalTo( simpleContent ) );
         fileManager.delete( TEST_FS, path1 );
+        sleep( 1000 ); // so that gc is sure to removes it
         Map<FileInfo, Boolean> ret = fileManager.gc();
         logger.info( "GC result: {}", ret );
         assertThat( realFile.exists(), equalTo( false ) );

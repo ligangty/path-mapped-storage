@@ -25,4 +25,10 @@ public class FileInfo
     {
         this.fileStorage = fileStorage;
     }
+
+    @Override
+    public String toString()
+    {
+        return "FileInfo{" + "fileId='" + fileId + '\'' + ", fileStorage='" + fileStorage + '\'' + '}';
+    }
 }

@@ -56,6 +56,8 @@ public abstract class AbstractCassandraFMTest
 
     private String baseStoragePath;
 
+    private static DefaultPathMappedStorageConfig config;
+
     @BeforeClass
     public static void startEmbeddedCassandra()
             throws Exception
@@ -66,7 +68,7 @@ public abstract class AbstractCassandraFMTest
         props.put( PROP_CASSANDRA_PORT, 9142 );
         props.put( PROP_CASSANDRA_KEYSPACE, KEYSPACE );
 
-        DefaultPathMappedStorageConfig config = new DefaultPathMappedStorageConfig( props );
+        config = new DefaultPathMappedStorageConfig( props );
         // In test, we should let gc happened immediately when triggered.
         config.setGcGracePeriodInHours( 0 );
         pathDB = new CassandraPathDB( config );
@@ -84,7 +86,7 @@ public abstract class AbstractCassandraFMTest
     {
         File baseDir = temp.newFolder();
         baseStoragePath = baseDir.getCanonicalPath();
-        fileManager = new PathMappedFileManager( new DefaultPathMappedStorageConfig(), pathDB,
+        fileManager = new PathMappedFileManager( config, pathDB,
                                                  new FileBasedPhysicalStore( baseDir ) );
     }
 

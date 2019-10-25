@@ -1,6 +1,5 @@
 package org.commonjava.storage.pathmapped.core;
 
-import org.apache.commons.codec.digest.DigestUtils;
 import org.commonjava.storage.pathmapped.spi.PhysicalStore;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -14,6 +13,7 @@ import java.io.OutputStream;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 
+import static org.commonjava.storage.pathmapped.util.PathMapUtils.getFileId;
 import static org.commonjava.storage.pathmapped.util.PathMapUtils.getStoragePathByFileId;
 
 public class FileBasedPhysicalStore implements PhysicalStore
@@ -30,8 +30,7 @@ public class FileBasedPhysicalStore implements PhysicalStore
     @Override
     public FileInfo getFileInfo( String fileSystem, String path )
     {
-        String uri = fileSystem + ":" + path;
-        String id = DigestUtils.md5Hex( uri );
+        String id = getFileId( fileSystem, path );
 
         FileInfo fileInfo = new FileInfo();
         fileInfo.setFileId( id );

@@ -1,5 +1,6 @@
 package org.commonjava.storage.pathmapped.util;
 
+import org.apache.commons.codec.digest.DigestUtils;
 import org.commonjava.storage.pathmapped.model.PathMap;
 
 import java.util.Collections;
@@ -72,6 +73,12 @@ public class PathMapUtils
         return toks[toks.length - 1];
     }
 
+    public static String getFileId( String fileSystem, String path )
+    {
+        String uri = fileSystem + ":" + path;
+        return DigestUtils.md5Hex( uri );
+    }
+
     public static String getStoragePathByFileId( String id )
     {
         String folder = id.substring( 0, 2 );
@@ -126,8 +133,13 @@ public class PathMapUtils
         return l;
     }
 
+    // always prepend "/" to path
     public static String marshall( String fileSystem, String path )
     {
+        if ( !path.startsWith( "/" ) )
+        {
+            path = "/" + path;
+        }
         return fileSystem + ":" + path;
     }
 

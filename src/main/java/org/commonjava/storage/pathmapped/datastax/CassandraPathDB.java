@@ -241,6 +241,7 @@ public class CassandraPathDB
 
         // update reverse map
         ReverseMap reverseMap = deleteFromReverseMap( pathMap.getFileId(), marshall( fileSystem, path ) );
+        logger.debug( "Updated reverseMap, {}", reverseMap );
         if ( reverseMap == null || reverseMap.getPaths() == null || reverseMap.getPaths().isEmpty() )
         {
             // reclaim, but not remove from reverse table immediately (for race-detection/double-check)
@@ -251,18 +252,22 @@ public class CassandraPathDB
 
     private ReverseMap deleteFromReverseMap( String fileId, String path )
     {
+        logger.debug( "Delete from reverseMap, fileId: {}, path: {}", fileId, path );
         session.execute( "UPDATE " + keyspace + ".reversemap SET paths -= {'" + path + "'} WHERE fileid=?;", fileId );
         return reverseMapMapper.get( fileId );
     }
 
     private void addToReverseMap( String fileId, String path )
     {
+        logger.debug( "Add to reverseMap, fileId: {}, path: {}", fileId, path );
         session.execute( "UPDATE " + keyspace + ".reversemap SET paths += {'" + path + "'} WHERE fileid=?;", fileId );
     }
 
     private void reclaim( String fileId, String fileStorage )
     {
-        reclaimMapper.save( new DtxReclaim( fileId, new Date(), fileStorage ) );
+        DtxReclaim reclaim = new DtxReclaim( fileId, new Date(), fileStorage );
+        logger.debug( "Reclaim, {}", reclaim );
+        reclaimMapper.save( reclaim );
     }
 
     @Override
@@ -346,7 +351,9 @@ public class CassandraPathDB
     public List<Reclaim> listOrphanedFiles()
     {
         // timestamp data type is encoded as the number of milliseconds since epoch
-        long threshold = getReclaimThreshold( new Date(), config.getGCGracePeriodInHours() );
+        Date cur = new Date();
+        long threshold = getReclaimThreshold( cur, config.getGCGracePeriodInHours() );
+        logger.debug( "listOrphanedFiles, cur: {}, threshold: {}", cur, new Date( threshold ) );
         ResultSet result =
                         session.execute( "SELECT * FROM " + keyspace + ".reclaim WHERE partition = 0 AND deletion < ?;",
                                          threshold );

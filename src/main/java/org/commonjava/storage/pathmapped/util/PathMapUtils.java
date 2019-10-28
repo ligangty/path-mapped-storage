@@ -6,6 +6,7 @@ import org.commonjava.storage.pathmapped.model.PathMap;
 import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.UUID;
 
 import static org.apache.commons.lang.StringUtils.isBlank;
 
@@ -73,18 +74,24 @@ public class PathMapUtils
         return toks[toks.length - 1];
     }
 
-    public static String getFileId( String fileSystem, String path )
+    private static final int LEVEL_1_DIR_LENGTH = 2;
+
+    private static final int LEVEL_2_DIR_LENGTH = 2;
+
+    private static final int DIR_LENGTH = LEVEL_1_DIR_LENGTH + LEVEL_2_DIR_LENGTH;
+
+    public static String getRandomFileId()
     {
-        String uri = fileSystem + ":" + path;
-        return DigestUtils.md5Hex( uri );
+        return UUID.randomUUID().toString();
     }
 
-    public static String getStoragePathByFileId( String id )
+    public static String getStorageDir( String fileSystem, String path )
     {
-        String folder = id.substring( 0, 2 );
-        String subFolder = id.substring( 2, 4 );
-        String filename = id.substring( 4 );
-        return folder + "/" + subFolder + "/" + filename;
+        String uri = fileSystem + ":" + path;
+        String md5Hex = DigestUtils.md5Hex( uri );
+        String folder = md5Hex.substring( 0, LEVEL_1_DIR_LENGTH );
+        String subFolder = md5Hex.substring( LEVEL_1_DIR_LENGTH, DIR_LENGTH );
+        return folder + "/" + subFolder;
     }
 
     /**

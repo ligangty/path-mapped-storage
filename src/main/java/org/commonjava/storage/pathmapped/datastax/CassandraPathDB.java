@@ -104,7 +104,7 @@ public class CassandraPathDB
     }
 
     @Override
-    public int getFileLength( String fileSystem, String path )
+    public long getFileLength( String fileSystem, String path )
     {
         PathMap pathMap = getPathMap( fileSystem, path );
         if ( pathMap != null )
@@ -159,7 +159,7 @@ public class CassandraPathDB
     }
 
     @Override
-    public void insert( String fileSystem, String path, Date date, String fileId, int size, String fileStorage )
+    public void insert( String fileSystem, String path, Date date, String fileId, long size, String fileStorage )
     {
         DtxPathMap pathMap = new DtxPathMap();
         pathMap.setFileSystem( fileSystem );

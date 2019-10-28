@@ -104,10 +104,10 @@ public class SimpleIOTest
     public void getFileMetadata()
             throws Exception
     {
-        assertThat( fileManager.getFileLength( TEST_FS, null ), equalTo( 0 ) );
+        assertThat( fileManager.getFileLength( TEST_FS, null ), equalTo( 0L ) );
         assertThat( fileManager.getFileLastModified( TEST_FS, null ), equalTo( -1L ) );
         readWrittenFile();
-        assertThat( fileManager.getFileLength( TEST_FS, path1 ), equalTo( simpleContent.length() ) );
+        assertThat( fileManager.getFileLength( TEST_FS, path1 ), equalTo( (long)simpleContent.length() ) );
         assertThat( fileManager.getFileLastModified( TEST_FS, path1 ) > 0, equalTo( true ) );
     }
 

@@ -28,7 +28,7 @@ public class DtxPathMap implements PathMap
     private Date creation;
 
     @Column
-    private int size;
+    private long size;
 
     @Column
     private String fileStorage;
@@ -37,7 +37,7 @@ public class DtxPathMap implements PathMap
     {
     }
 
-    public DtxPathMap( String fileSystem, String parentPath, String filename, String fileId, Date creation, int size, String fileStorage )
+    public DtxPathMap( String fileSystem, String parentPath, String filename, String fileId, Date creation, long size, String fileStorage )
     {
         this.fileSystem = fileSystem;
         this.parentPath = parentPath;
@@ -58,12 +58,12 @@ public class DtxPathMap implements PathMap
         this.fileId = fileId;
     }
 
-    public int getSize()
+    public long getSize()
     {
         return size;
     }
 
-    public void setSize( int size )
+    public void setSize( long size )
     {
         this.size = size;
     }

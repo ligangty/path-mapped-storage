@@ -10,13 +10,13 @@ public interface PathDB
 {
     List<PathMap> list( String fileSystem, String path );
 
-    int getFileLength( String fileSystem, String path );
+    long getFileLength( String fileSystem, String path );
 
     long getFileLastModified( String fileSystem, String path );
 
     boolean exists( String fileSystem, String path );
 
-    void insert( String fileSystem, String path, Date date, String fileId, int size, String fileStorage );
+    void insert( String fileSystem, String path, Date date, String fileId, long size, String fileStorage );
 
     void insert( PathMap pathMap );
 

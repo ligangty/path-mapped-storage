@@ -12,7 +12,7 @@ public interface PathMap
 
     String getFileId();
 
-    int getSize();
+    long getSize();
 
     String getFileStorage();
 

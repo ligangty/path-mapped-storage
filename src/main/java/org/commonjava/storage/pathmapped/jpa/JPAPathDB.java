@@ -54,7 +54,7 @@ public class JPAPathDB
     }
 
     @Override
-    public int getFileLength( String fileSystem, String path )
+    public long getFileLength( String fileSystem, String path )
     {
         PathMap pathMap = findPathMap( fileSystem, path );
         if ( pathMap != null )
@@ -92,7 +92,7 @@ public class JPAPathDB
     }
 
     @Override
-    public void insert( String fileSystem, String path, Date date, String fileId, int size, String fileStorage )
+    public void insert( String fileSystem, String path, Date date, String fileId, long size, String fileStorage )
     {
         JpaPathMap pathMap = new JpaPathMap();
         JpaPathKey pathKey = getPathKey( fileSystem, path );

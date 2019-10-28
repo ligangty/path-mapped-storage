@@ -13,8 +13,8 @@ import java.io.OutputStream;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 
-import static org.commonjava.storage.pathmapped.util.PathMapUtils.getFileId;
-import static org.commonjava.storage.pathmapped.util.PathMapUtils.getStoragePathByFileId;
+import static org.commonjava.storage.pathmapped.util.PathMapUtils.getRandomFileId;
+import static org.commonjava.storage.pathmapped.util.PathMapUtils.getStorageDir;
 
 public class FileBasedPhysicalStore implements PhysicalStore
 {
@@ -30,11 +30,11 @@ public class FileBasedPhysicalStore implements PhysicalStore
     @Override
     public FileInfo getFileInfo( String fileSystem, String path )
     {
-        String id = getFileId( fileSystem, path );
-
+        String dir = getStorageDir( fileSystem, path );
+        String id = getRandomFileId();
         FileInfo fileInfo = new FileInfo();
         fileInfo.setFileId( id );
-        fileInfo.setFileStorage( getStoragePathByFileId( id ) );
+        fileInfo.setFileStorage( Paths.get( dir, id ).toString() );
         return fileInfo;
     }
 

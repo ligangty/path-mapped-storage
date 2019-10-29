@@ -45,11 +45,8 @@ public class PathDBOutputStream
     {
         try
         {
-            synchronized ( this )
-            {
-                super.write( b );
-                size += 1;
-            }
+            super.write( b );
+            size += 1;
         }
         catch ( IOException e )
         {

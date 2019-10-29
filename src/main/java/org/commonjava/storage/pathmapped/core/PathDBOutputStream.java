@@ -25,7 +25,7 @@ public class PathDBOutputStream
 
     private final String fileStorage;
 
-    private int size;
+    private long size;
 
     public PathDBOutputStream( PathDB pathDB, PhysicalStore physicalStore, String fileSystem, String path,
                                FileInfo fileInfo, OutputStream out )

@@ -22,7 +22,7 @@ public class CassandraPathDBUtils
                         + "filename varchar,"
                         + "fileid varchar,"
                         + "creation timestamp,"
-                        + "size int,"
+                        + "size bigint,"
                         + "filestorage varchar,"
                         + "PRIMARY KEY (filesystem, parentpath, filename)"
                         + ");";

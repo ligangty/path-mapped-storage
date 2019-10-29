@@ -23,7 +23,7 @@ public class JpaPathMap implements PathMap
     private Date creation;
 
     @Column
-    private int size;
+    private long size;
 
     @Column( name = "filestorage" )
     private String fileStorage;
@@ -32,7 +32,7 @@ public class JpaPathMap implements PathMap
     {
     }
 
-    public JpaPathMap( JpaPathKey pathKey, String fileId, Date creation, int size, String fileStorage )
+    public JpaPathMap( JpaPathKey pathKey, String fileId, Date creation, long size, String fileStorage )
     {
         this.pathKey = pathKey;
         this.fileId = fileId;
@@ -79,12 +79,12 @@ public class JpaPathMap implements PathMap
         this.fileId = fileId;
     }
 
-    public int getSize()
+    public long getSize()
     {
         return size;
     }
 
-    public void setSize( int size )
+    public void setSize( long size )
     {
         this.size = size;
     }

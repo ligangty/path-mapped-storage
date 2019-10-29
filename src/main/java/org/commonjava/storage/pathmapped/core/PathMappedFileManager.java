@@ -84,7 +84,7 @@ public class PathMappedFileManager
         } ).toArray( String[]::new );
     }
 
-    public int getFileLength( String fileSystem, String path )
+    public long getFileLength( String fileSystem, String path )
     {
         if ( path == null )
         {

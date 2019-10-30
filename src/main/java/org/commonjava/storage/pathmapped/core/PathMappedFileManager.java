@@ -8,6 +8,7 @@ import org.commonjava.storage.pathmapped.spi.PhysicalStore;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.Closeable;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -15,7 +16,9 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-public class PathMappedFileManager
+import static org.commonjava.storage.pathmapped.util.PathMapUtils.ROOT_DIR;
+
+public class PathMappedFileManager implements Closeable
 {
     private final Logger logger = LoggerFactory.getLogger( getClass() );
 
@@ -117,6 +120,10 @@ public class PathMappedFileManager
         {
             return false;
         }
+        if ( ROOT_DIR.equals( path ) )
+        {
+            return true;
+        }
         final String pathWithSlash = path.endsWith( "/" ) ? path : path + "/";
         return pathDB.isDirectory( fileSystem, pathWithSlash );
     }
@@ -165,4 +172,12 @@ public class PathMappedFileManager
         return gcResults;
     }
 
+    @Override
+    public void close() throws IOException
+    {
+        if ( pathDB instanceof Closeable )
+        {
+            ( (Closeable) pathDB ).close();
+        }
+    }
 }

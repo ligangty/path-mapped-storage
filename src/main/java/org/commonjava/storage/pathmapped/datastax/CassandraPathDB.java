@@ -253,14 +253,14 @@ public class CassandraPathDB
     private ReverseMap deleteFromReverseMap( String fileId, String path )
     {
         logger.debug( "Delete from reverseMap, fileId: {}, path: {}", fileId, path );
-        session.execute( "UPDATE " + keyspace + ".reversemap SET paths -= {'" + path + "'} WHERE fileid=?;", fileId );
+        session.execute( "UPDATE " + keyspace + ".reversemap SET paths = paths - {'" + path + "'} WHERE fileid=?;", fileId );
         return reverseMapMapper.get( fileId );
     }
 
     private void addToReverseMap( String fileId, String path )
     {
         logger.debug( "Add to reverseMap, fileId: {}, path: {}", fileId, path );
-        session.execute( "UPDATE " + keyspace + ".reversemap SET paths += {'" + path + "'} WHERE fileid=?;", fileId );
+        session.execute( "UPDATE " + keyspace + ".reversemap SET paths = paths + {'" + path + "'} WHERE fileid=?;", fileId );
     }
 
     private void reclaim( String fileId, String fileStorage )

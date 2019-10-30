@@ -53,7 +53,13 @@ public class FileBasedPhysicalStore implements PhysicalStore
     @Override
     public InputStream getInputStream( String storageFile ) throws IOException
     {
-        return new FileInputStream( new File( baseDir, storageFile ) );
+        File f = new File( baseDir, storageFile );
+        if ( f.isDirectory() || !f.exists() )
+        {
+            logger.debug( "Target file not exists, file: {}", f.getAbsolutePath() );
+            return null;
+        }
+        return new FileInputStream( f );
     }
 
     @Override

@@ -426,7 +426,7 @@ public class SimpleIOTest
     private void assertPathWithChecker( PathChecker<Boolean> checker, String fileSystem, String path, boolean expected )
     {
         assertThat( checker.checkPath( fileSystem, path ), equalTo( expected ) );
-        assertThat( checker.checkPath( fileSystem, path + "/" ), equalTo( expected ) );
+//        assertThat( checker.checkPath( fileSystem, path + "/" ), equalTo( expected ) );
     }
 
     @Override

@@ -1,6 +1,8 @@
 package org.commonjava.storage.pathmapped.datastax;
 
+import com.datastax.driver.core.BoundStatement;
 import com.datastax.driver.core.Cluster;
+import com.datastax.driver.core.PreparedStatement;
 import com.datastax.driver.core.ResultSet;
 import com.datastax.driver.core.Session;
 import com.datastax.driver.mapping.Mapper;
@@ -51,6 +53,8 @@ public class CassandraPathDB
 
     private final String keyspace;
 
+    private final PreparedStatement preparedSingleExistQuery, preparedDoubleExistQuery, preparedListQuery;
+
     public CassandraPathDB( PathMappedStorageConfig config )
     {
         this.config = config;
@@ -75,6 +79,15 @@ public class CassandraPathDB
         pathMapMapper = manager.mapper( DtxPathMap.class, keyspace );
         reverseMapMapper = manager.mapper( DtxReverseMap.class, keyspace );
         reclaimMapper = manager.mapper( DtxReclaim.class, keyspace );
+
+        preparedSingleExistQuery = session.prepare( "SELECT count(*) FROM " + keyspace
+                                                                    + ".pathmap WHERE filesystem=? and parentpath=? and filename=?;" );
+
+        preparedDoubleExistQuery = session.prepare( "SELECT count(*) FROM " + keyspace
+                                                                    + ".pathmap WHERE filesystem=? and parentpath=? and filename in (?,?);" );
+
+        preparedListQuery = session.prepare(
+                        "SELECT * FROM " + keyspace + ".pathmap WHERE filesystem=? and parentpath=?;" );
     }
 
     @Override
@@ -82,7 +95,7 @@ public class CassandraPathDB
     {
         session.close();
         cluster.close();
-        logger.debug( "Connection closed" );
+        logger.debug( "Cassandra connection closed" );
     }
 
     public Session getSession()
@@ -96,9 +109,8 @@ public class CassandraPathDB
     public List<PathMap> list( String fileSystem, String path )
     {
         String parentPath = normalizeParentPath( path );
-        ResultSet result =
-                        session.execute( "SELECT * FROM " + keyspace + ".pathmap WHERE filesystem=? and parentpath=?;",
-                                         fileSystem, parentPath );
+        BoundStatement bound = preparedListQuery.bind( fileSystem, parentPath );
+        ResultSet result = session.execute( bound );
         Result<DtxPathMap> ret = pathMapMapper.map( result );
         return new ArrayList<>( ret.all() );
     }
@@ -151,9 +163,17 @@ public class CassandraPathDB
         }
         String parentPath = getParentPath( path );
         String filename = getFilename( path );
-        ResultSet result = session.execute( "SELECT count(*) FROM " + keyspace
-                                                            + ".pathmap WHERE filesystem=? and parentpath=? and filename in (?,?);",
-                                            fileSystem, parentPath, filename, filename + "/" );
+
+        BoundStatement bound;
+        if ( filename.endsWith( "/" ) )
+        {
+            bound = preparedSingleExistQuery.bind( fileSystem, parentPath, filename );
+        }
+        else
+        {
+            bound = preparedDoubleExistQuery.bind( fileSystem, parentPath, filename, filename + "/" );
+        }
+        ResultSet result = session.execute( bound );
         long count = result.one().get( 0, Long.class );
         return count > 0;
     }
@@ -197,26 +217,40 @@ public class CassandraPathDB
         addToReverseMap( pathMap.getFileId(), marshall( fileSystem, path ) );
     }
 
+    /**
+     * There is a short cut mainly due to performance consideration. If path ends with /, it is safe to assume it is directory.
+     * The general use case is caller to recursively list a dir and for all sub-folders we return a name with slash.
+     */
     @Override
     public boolean isDirectory( String fileSystem, String path )
     {
-        PathMap pathMap = getPathMap( fileSystem, path );
-        if ( pathMap != null )
+        if ( path.endsWith( "/" ) )
         {
-            return pathMap.getFileId() == null;
+            return true;
         }
-        return false;
+        String parentPath = getParentPath( path );
+        String filename = getFilename( path ) + "/";
+
+        BoundStatement bound = preparedSingleExistQuery.bind( fileSystem, parentPath, filename );
+        ResultSet result = session.execute( bound );
+        long count = result.one().get( 0, Long.class );
+        return count > 0;
     }
 
     @Override
     public boolean isFile( String fileSystem, String path )
     {
-        PathMap pathMap = getPathMap( fileSystem, path );
-        if ( pathMap != null )
+        if ( path.endsWith( "/" ) )
         {
-            return pathMap.getFileId() != null;
+            return false;
         }
-        return false;
+        String parentPath = getParentPath( path );
+        String filename = getFilename( path );
+
+        BoundStatement bound = preparedSingleExistQuery.bind( fileSystem, parentPath, filename );
+        ResultSet result = session.execute( bound );
+        long count = result.one().get( 0, Long.class );
+        return count > 0;
     }
 
     @Override
@@ -250,6 +284,7 @@ public class CassandraPathDB
         return true;
     }
 
+    // We have to use non-prepared statement because bind variables are not supported inside collections
     private ReverseMap deleteFromReverseMap( String fileId, String path )
     {
         logger.debug( "Delete from reverseMap, fileId: {}, path: {}", fileId, path );
@@ -326,10 +361,22 @@ public class CassandraPathDB
             path += "/";
         }
 
+        String parentPath = getParentPath( path );
+        String filename = getFilename( path );
+
+        BoundStatement bound = preparedSingleExistQuery.bind( fileSystem, parentPath, filename );
+        ResultSet result = session.execute( bound );
+        long count = result.one().get( 0, Long.class );
+        if ( count > 0 )
+        {
+            logger.debug( "Dir already exists, fileSystem: {}, path: {}", fileSystem, path );
+            return;
+        }
+
         DtxPathMap pathMap = new DtxPathMap();
         pathMap.setFileSystem( fileSystem );
-        pathMap.setParentPath( getParentPath( path ) );
-        pathMap.setFilename( getFilename( path ) );
+        pathMap.setParentPath( parentPath );
+        pathMap.setFilename( filename );
 
         final List<DtxPathMap> parents = getParentsBottomUp( pathMap, ( fSystem, pPath, fName ) -> {
             DtxPathMap p = new DtxPathMap();

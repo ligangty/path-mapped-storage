@@ -124,8 +124,7 @@ public class PathMappedFileManager implements Closeable
         {
             return true;
         }
-        final String pathWithSlash = path.endsWith( "/" ) ? path : path + "/";
-        return pathDB.isDirectory( fileSystem, pathWithSlash );
+        return pathDB.isDirectory( fileSystem, path );
     }
 
     public boolean isFile( String fileSystem, String path )

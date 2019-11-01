@@ -5,6 +5,8 @@ import java.util.Map;
 public class DefaultPathMappedStorageConfig
                 implements PathMappedStorageConfig
 {
+    private static final int DEFAULT_GC_BATCH_SIZE = 0; // no limit
+
     private final int DEFAULT_GC_INTERVAL_IN_MINUTES = 60;
 
     private final int DEFAULT_GC_GRACE_PERIOD_IN_HOURS = 24;
@@ -12,6 +14,8 @@ public class DefaultPathMappedStorageConfig
     private int gcGracePeriodInHours = DEFAULT_GC_GRACE_PERIOD_IN_HOURS;
 
     private int gcIntervalInMinutes = DEFAULT_GC_INTERVAL_IN_MINUTES;
+
+    private int gcBatchSize = DEFAULT_GC_BATCH_SIZE;
 
     public DefaultPathMappedStorageConfig()
     {
@@ -62,4 +66,14 @@ public class DefaultPathMappedStorageConfig
         return null;
     }
 
+    @Override
+    public int getGCBatchSize()
+    {
+        return gcBatchSize;
+    }
+
+    public void setGcBatchSize( int gcBatchSize )
+    {
+        this.gcBatchSize = gcBatchSize;
+    }
 }

@@ -10,4 +10,6 @@ public interface PathMappedStorageConfig
     boolean isSubsystemEnabled( String fileSystem );
 
     Object getProperty( String key );
+
+    int getGCBatchSize();
 }

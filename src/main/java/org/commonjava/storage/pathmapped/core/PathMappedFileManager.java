@@ -154,20 +154,34 @@ public class PathMappedFileManager implements Closeable
     public Map<FileInfo, Boolean> gc()
     {
         Map<FileInfo, Boolean> gcResults = new HashMap<>();
-        List<Reclaim> reclaims = pathDB.listOrphanedFiles();
-        logger.debug( "Get reclaims for GC, size: {}", reclaims.size() );
-        reclaims.forEach( ( reclaim ) -> {
-            FileInfo fileInfo = new FileInfo();
-            fileInfo.setFileId( reclaim.getFileId() );
-            fileInfo.setFileStorage( reclaim.getStorage() );
-            boolean result = physicalStore.delete( fileInfo );
-            if ( result )
+        while ( true )
+        {
+            int batchSize = config.getGCBatchSize();
+            List<Reclaim> reclaims = pathDB.listOrphanedFiles( batchSize );
+            int size = reclaims.size();
+            logger.debug( "Get reclaims for GC, size: {}", size );
+            if ( size <= 0 )
             {
-                logger.debug( "Delete from physicalStore, fileInfo: {}", fileInfo );
-                pathDB.removeFromReclaim( reclaim );
+                break;
             }
-            gcResults.put( fileInfo, result );
-        } );
+            else if ( batchSize > 0 && size < batchSize )
+            {
+                logger.debug( "Get reclaims but less than batch size {}. Break.", batchSize );
+                break;
+            }
+            reclaims.forEach( ( reclaim ) -> {
+                FileInfo fileInfo = new FileInfo();
+                fileInfo.setFileId( reclaim.getFileId() );
+                fileInfo.setFileStorage( reclaim.getStorage() );
+                boolean result = physicalStore.delete( fileInfo );
+                if ( result )
+                {
+                    logger.debug( "Delete from physicalStore, fileInfo: {}", fileInfo );
+                    pathDB.removeFromReclaim( reclaim );
+                }
+                gcResults.put( fileInfo, result );
+            } );
+        }
         return gcResults;
     }
 

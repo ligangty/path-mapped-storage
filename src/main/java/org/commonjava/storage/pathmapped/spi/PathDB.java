@@ -32,7 +32,7 @@ public interface PathDB
 
     void makeDirs( String fileSystem, String path );
 
-    List<Reclaim> listOrphanedFiles();
+    List<Reclaim> listOrphanedFiles( int limit );
 
     void removeFromReclaim( Reclaim reclaim );
 }

@@ -25,6 +25,7 @@ import org.commonjava.storage.pathmapped.core.FileInfo;
 import org.commonjava.storage.pathmapped.core.PathMappedFileManager;
 import org.commonjava.storage.pathmapped.datastax.CassandraPathDB;
 import org.junit.After;
+import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Rule;
@@ -111,6 +112,15 @@ public abstract class AbstractCassandraFMTest
 
     }
 
+    @AfterClass
+    public static void shutdown()
+    {
+        if ( pathDB != null )
+        {
+            pathDB.close();
+        }
+    }
+
     String getBaseDir()
     {
         return baseStoragePath;
@@ -136,14 +146,13 @@ public abstract class AbstractCassandraFMTest
 
     private void cleanAllData()
     {
-        String host = (String) config.getProperty( PROP_CASSANDRA_HOST );
-        int port = (Integer) config.getProperty( PROP_CASSANDRA_PORT );
-        Cluster cluster = Cluster.builder().withoutJMXReporting().addContactPoint( host ).withPort( port ).build();
-        Session session = cluster.connect();
-        session.execute( "TRUNCATE " + KEYSPACE + ".pathmap;" );
-        session.execute( "TRUNCATE " + KEYSPACE + ".reversemap;" );
-        session.execute( "TRUNCATE " + KEYSPACE + ".reclaim;" );
-        session.execute( "TRUNCATE " + KEYSPACE + ".filechecksum;" );
+        if(pathDB!=null){
+            Session session = pathDB.getSession();
+            session.execute( "TRUNCATE " + KEYSPACE + ".pathmap;" );
+            session.execute( "TRUNCATE " + KEYSPACE + ".reversemap;" );
+            session.execute( "TRUNCATE " + KEYSPACE + ".reclaim;" );
+            session.execute( "TRUNCATE " + KEYSPACE + ".filechecksum;" );
+        }
     }
 
     private void clearCommon(){

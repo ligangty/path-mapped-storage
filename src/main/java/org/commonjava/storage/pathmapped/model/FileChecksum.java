@@ -5,4 +5,6 @@ public interface FileChecksum
     String getFileId();
 
     String getChecksum();
+
+    String getStorage();
 }

@@ -17,4 +17,6 @@ public interface PathMap
     String getFileStorage();
 
     Date getCreation();
+
+    String getChecksum();
 }

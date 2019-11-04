@@ -28,17 +28,21 @@ public class JpaPathMap implements PathMap
     @Column( name = "filestorage" )
     private String fileStorage;
 
+    @Column( name = "checksum" )
+    private String checksum;
+
     public JpaPathMap()
     {
     }
 
-    public JpaPathMap( JpaPathKey pathKey, String fileId, Date creation, long size, String fileStorage )
+    public JpaPathMap( JpaPathKey pathKey, String fileId, Date creation, long size, String fileStorage, String checksum )
     {
         this.pathKey = pathKey;
         this.fileId = fileId;
         this.creation = creation;
         this.size = size;
         this.fileStorage = fileStorage;
+        this.checksum = checksum;
     }
 
     public JpaPathKey getPathKey()
@@ -107,6 +111,17 @@ public class JpaPathMap implements PathMap
     public void setCreation( Date creation )
     {
         this.creation = creation;
+    }
+
+    @Override
+    public String getChecksum()
+    {
+        return checksum;
+    }
+
+    public void setChecksum( String checksum )
+    {
+        this.checksum = checksum;
     }
 
     @Override

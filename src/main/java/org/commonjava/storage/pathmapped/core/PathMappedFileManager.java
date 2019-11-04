@@ -12,6 +12,7 @@ import java.io.Closeable;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.security.NoSuchAlgorithmException;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -61,8 +62,16 @@ public class PathMappedFileManager implements Closeable
     public OutputStream openOutputStream( String fileSystem, String path ) throws IOException
     {
         FileInfo fileInfo = physicalStore.getFileInfo( fileSystem, path );
-        return new PathDBOutputStream( pathDB, physicalStore, fileSystem, path, fileInfo,
-                                       physicalStore.getOutputStream( fileInfo ) );
+        try
+        {
+            return new PathDBOutputStream( pathDB, physicalStore, fileSystem, path, fileInfo,
+                                           physicalStore.getOutputStream( fileInfo ),
+                                           config.getFileChecksumAlgorithm() );
+        }
+        catch ( NoSuchAlgorithmException e )
+        {
+            throw new IOException( "Error: checksum checking not correct", e );
+        }
     }
 
     public boolean delete( String fileSystem, String path )

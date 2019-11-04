@@ -1,6 +1,5 @@
 package org.commonjava.storage.pathmapped.util;
 
-import org.apache.commons.codec.digest.DigestUtils;
 import org.commonjava.storage.pathmapped.model.PathMap;
 
 import java.util.Collections;
@@ -85,12 +84,10 @@ public class PathMapUtils
         return UUID.randomUUID().toString();
     }
 
-    public static String getStorageDir( String fileSystem, String path )
+    public static String getStorageDir( String fileId )
     {
-        String uri = fileSystem + ":" + path;
-        String md5Hex = DigestUtils.md5Hex( uri );
-        String folder = md5Hex.substring( 0, LEVEL_1_DIR_LENGTH );
-        String subFolder = md5Hex.substring( LEVEL_1_DIR_LENGTH, DIR_LENGTH );
+        String folder = fileId.substring( 0, LEVEL_1_DIR_LENGTH );
+        String subFolder = fileId.substring( LEVEL_1_DIR_LENGTH, DIR_LENGTH );
         return folder + "/" + subFolder;
     }
 

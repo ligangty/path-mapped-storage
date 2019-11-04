@@ -30,8 +30,8 @@ public class FileBasedPhysicalStore implements PhysicalStore
     @Override
     public FileInfo getFileInfo( String fileSystem, String path )
     {
-        String dir = getStorageDir( fileSystem, path );
         String id = getRandomFileId();
+        String dir = getStorageDir( id );
         FileInfo fileInfo = new FileInfo();
         fileInfo.setFileId( id );
         fileInfo.setFileStorage( Paths.get( dir, id ).toString() );

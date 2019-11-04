@@ -15,6 +15,9 @@ import java.io.OutputStream;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
 
 import static org.commonjava.storage.pathmapped.util.PathMapUtils.ROOT_DIR;
 
@@ -28,11 +31,21 @@ public class PathMappedFileManager implements Closeable
 
     private final PathMappedStorageConfig config;
 
+    private ScheduledExecutorService gcThreadPool;
+
     public PathMappedFileManager( PathMappedStorageConfig config, PathDB pathDB, PhysicalStore physicalStore )
     {
         this.pathDB = pathDB;
         this.physicalStore = physicalStore;
         this.config = config;
+
+        if ( config.getGCIntervalInMinutes() > 0 )
+        {
+            gcThreadPool = Executors.newScheduledThreadPool( 1 );
+            gcThreadPool.schedule( () -> {
+                gc();
+            }, config.getGCIntervalInMinutes(), TimeUnit.MINUTES );
+        }
     }
 
     public InputStream openInputStream( String fileSystem, String path ) throws IOException

@@ -330,7 +330,7 @@ public class JPAPathDB
     }
 
     @Override
-    public List<Reclaim> listOrphanedFiles()
+    public List<Reclaim> listOrphanedFiles( int limit )
     {
         Query query = entitymanager.createQuery( "Select r from Reclaim r" );
         return query.getResultList();

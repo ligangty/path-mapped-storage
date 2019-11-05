@@ -230,23 +230,30 @@ public class CassandraPathDB
             delete( fileSystem, path );
         }
 
-        final FileChecksum existedChecksum = fileChecksumMapper.get( checksum );
+        //TODO: This checksum null checking is used to add a workaround for storage migration. We are judging if
+        //      this checksum entry is needed for existed legacy storage files, so if not needed, null can be passed
+        //      in to skip the checksum de-dupe process.
+        if ( isNotBlank( checksum ) )
+        {
+            final FileChecksum existedChecksum = fileChecksumMapper.get( checksum );
 
-        if ( existedChecksum != null )
-        {
-            logger.info( "File checksum conflict, should use existed file storage" );
-            final String deprecatedStorage = pathMap.getFileStorage();
-            ( (DtxPathMap) pathMap ).setFileStorage( existedChecksum.getStorage() );
-            ( (DtxPathMap) pathMap ).setFileId( existedChecksum.getFileId() );
-            ( (DtxPathMap) pathMap ).setChecksum( existedChecksum.getChecksum() );
-            // Need to mark the generated file storage path as reclaimed to remove it.
-            final String deprecatedFileId = PathMapUtils.getRandomFileId();
-            reclaim( deprecatedFileId, deprecatedStorage );
-        }
-        else
-        {
-            logger.debug( "File checksum not exists, marked current file {} as primary", pathMap );
-            fileChecksumMapper.save( new DtxFileChecksum( checksum, pathMap.getFileId(), pathMap.getFileStorage() ) );
+            if ( existedChecksum != null )
+            {
+                logger.info( "File checksum conflict, should use existed file storage" );
+                final String deprecatedStorage = pathMap.getFileStorage();
+                ( (DtxPathMap) pathMap ).setFileStorage( existedChecksum.getStorage() );
+                ( (DtxPathMap) pathMap ).setFileId( existedChecksum.getFileId() );
+                ( (DtxPathMap) pathMap ).setChecksum( existedChecksum.getChecksum() );
+                // Need to mark the generated file storage path as reclaimed to remove it.
+                final String deprecatedFileId = PathMapUtils.getRandomFileId();
+                reclaim( deprecatedFileId, deprecatedStorage );
+            }
+            else
+            {
+                logger.debug( "File checksum not exists, marked current file {} as primary", pathMap );
+                fileChecksumMapper.save(
+                        new DtxFileChecksum( checksum, pathMap.getFileId(), pathMap.getFileStorage() ) );
+            }
         }
 
         pathMapMapper.save( (DtxPathMap) pathMap );

@@ -6,6 +6,10 @@ public class CassandraPathDBUtils
 
     public static final String PROP_CASSANDRA_PORT = "cassandra_port";
 
+    public static final String PROP_CASSANDRA_USER = "cassandra_user";
+
+    public static final String PROP_CASSANDRA_PASS = "cassandra_pass";
+
     public static final String PROP_CASSANDRA_KEYSPACE = "cassandra_keyspace";
 
     public static String getSchemaCreateKeyspace( String keyspace )

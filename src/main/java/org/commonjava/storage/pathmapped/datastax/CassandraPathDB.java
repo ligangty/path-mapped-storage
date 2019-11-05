@@ -28,14 +28,8 @@ import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 
-import static org.commonjava.storage.pathmapped.util.CassandraPathDBUtils.PROP_CASSANDRA_HOST;
-import static org.commonjava.storage.pathmapped.util.CassandraPathDBUtils.PROP_CASSANDRA_KEYSPACE;
-import static org.commonjava.storage.pathmapped.util.CassandraPathDBUtils.PROP_CASSANDRA_PORT;
-import static org.commonjava.storage.pathmapped.util.CassandraPathDBUtils.getSchemaCreateKeyspace;
-import static org.commonjava.storage.pathmapped.util.CassandraPathDBUtils.getSchemaCreateTableFileChecksum;
-import static org.commonjava.storage.pathmapped.util.CassandraPathDBUtils.getSchemaCreateTablePathmap;
-import static org.commonjava.storage.pathmapped.util.CassandraPathDBUtils.getSchemaCreateTableReclaim;
-import static org.commonjava.storage.pathmapped.util.CassandraPathDBUtils.getSchemaCreateTableReversemap;
+import static org.apache.commons.lang.StringUtils.isNotBlank;
+import static org.commonjava.storage.pathmapped.util.CassandraPathDBUtils.*;
 import static org.commonjava.storage.pathmapped.util.PathMapUtils.ROOT_DIR;
 import static org.commonjava.storage.pathmapped.util.PathMapUtils.getFilename;
 import static org.commonjava.storage.pathmapped.util.PathMapUtils.getParentPath;
@@ -73,8 +67,16 @@ public class CassandraPathDB
 
         String host = (String) config.getProperty( PROP_CASSANDRA_HOST );
         int port = (Integer) config.getProperty( PROP_CASSANDRA_PORT );
+        String username = (String) config.getProperty( PROP_CASSANDRA_USER );
+        String password = (String) config.getProperty( PROP_CASSANDRA_PASS );
 
-        cluster = Cluster.builder().withoutJMXReporting().addContactPoint( host ).withPort( port ).build();
+        Cluster.Builder builder = Cluster.builder().withoutJMXReporting().addContactPoint( host ).withPort( port );
+        if ( isNotBlank( username ) && isNotBlank( password ) )
+        {
+            logger.debug( "Build with credentials, user: {}, pass: ****", username );
+            builder.withCredentials( username, password );
+        }
+        cluster = builder.build();
 
         logger.debug( "Connecting to Cassandra, host:{}, port:{}", host, port );
         session = cluster.connect();

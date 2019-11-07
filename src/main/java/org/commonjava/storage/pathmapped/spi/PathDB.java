@@ -18,8 +18,6 @@ public interface PathDB
 
     void insert( String fileSystem, String path, Date date, String fileId, long size, String fileStorage, String checksum );
 
-    void insert( PathMap pathMap, String checksum );
-
     boolean isDirectory( String fileSystem, String path );
 
     boolean isFile( String fileSystem, String path );

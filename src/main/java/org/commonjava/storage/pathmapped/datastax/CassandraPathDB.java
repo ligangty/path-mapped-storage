@@ -222,8 +222,7 @@ public class CassandraPathDB
         insert( pathMap, checksum );
     }
 
-    @Override
-    public void insert( PathMap pathMap, String checksum )
+    private void insert( PathMap pathMap, String checksum )
     {
         logger.debug( "Insert: {}", pathMap );
 

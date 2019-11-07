@@ -43,8 +43,6 @@ public class CassandraPathDB
 {
     private final Logger logger = LoggerFactory.getLogger( getClass() );
 
-    private Cluster cluster;
-
     private Session session;
 
     private Mapper<DtxPathMap> pathMapMapper;
@@ -55,11 +53,19 @@ public class CassandraPathDB
 
     private Mapper<DtxFileChecksum> fileChecksumMapper;
 
-    private final PathMappedStorageConfig config;
+    private PathMappedStorageConfig config;
 
     private final String keyspace;
 
-    private final PreparedStatement preparedSingleExistQuery, preparedDoubleExistQuery, preparedListQuery;
+    private PreparedStatement preparedSingleExistQuery, preparedDoubleExistQuery, preparedListQuery;
+
+    public CassandraPathDB( PathMappedStorageConfig config, Session session, String keyspace )
+    {
+        this.config = config;
+        this.keyspace = keyspace;
+        this.session = session;
+        prepare( session, keyspace );
+    }
 
     public CassandraPathDB( PathMappedStorageConfig config )
     {
@@ -76,13 +82,17 @@ public class CassandraPathDB
             logger.debug( "Build with credentials, user: {}, pass: ****", username );
             builder.withCredentials( username, password );
         }
-        cluster = builder.build();
+        Cluster cluster = builder.build();
 
         logger.debug( "Connecting to Cassandra, host:{}, port:{}", host, port );
         session = cluster.connect();
 
         keyspace = (String) config.getProperty( PROP_CASSANDRA_KEYSPACE );
+        prepare( session, keyspace );
+    }
 
+    private void prepare( Session session, String keyspace )
+    {
         session.execute( getSchemaCreateKeyspace( keyspace ) );
         session.execute( getSchemaCreateTablePathmap( keyspace ) );
         session.execute( getSchemaCreateTableReversemap( keyspace ) );
@@ -97,21 +107,19 @@ public class CassandraPathDB
         fileChecksumMapper = manager.mapper( DtxFileChecksum.class, keyspace );
 
         preparedSingleExistQuery = session.prepare(
-                "SELECT count(*) FROM " + keyspace + ".pathmap WHERE filesystem=? and parentpath=? and filename=?;" );
+                        "SELECT count(*) FROM " + keyspace + ".pathmap WHERE filesystem=? and parentpath=? and filename=?;" );
 
         preparedDoubleExistQuery = session.prepare( "SELECT count(*) FROM " + keyspace
-                                                            + ".pathmap WHERE filesystem=? and parentpath=? and filename in (?,?);" );
+                                                                    + ".pathmap WHERE filesystem=? and parentpath=? and filename in (?,?);" );
 
         preparedListQuery =
-                session.prepare( "SELECT * FROM " + keyspace + ".pathmap WHERE filesystem=? and parentpath=?;" );
-
+                        session.prepare( "SELECT * FROM " + keyspace + ".pathmap WHERE filesystem=? and parentpath=?;" );
     }
 
     @Override
     public void close()
     {
         session.close();
-        cluster.close();
         logger.debug( "Cassandra connection closed" );
     }
 

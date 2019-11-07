@@ -53,12 +53,6 @@ public class DefaultPathMappedStorageConfig
     }
 
     @Override
-    public boolean isSubsystemEnabled( String fileSystem )
-    {
-        return false;
-    }
-
-    @Override
     public String getFileChecksumAlgorithm()
     {
         return fileChecksumAlgorithm;

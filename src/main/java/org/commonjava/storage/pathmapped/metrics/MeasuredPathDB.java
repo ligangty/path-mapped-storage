@@ -111,13 +111,10 @@ public class MeasuredPathDB
 
     private static final String TIMER = "timer";
 
-    private static final String METER = "meter";
-
     private void measure( Runnable runnable, String metricName )
     {
         if ( metricRegistry != null )
         {
-            metricRegistry.meter( name( metricPrefix, metricName, METER ) ).mark();
             Timer.Context context = metricRegistry.timer( name( metricPrefix, metricName, TIMER ) ).time();
             try
             {
@@ -140,7 +137,6 @@ public class MeasuredPathDB
         {
             if ( metricRegistry != null )
             {
-                metricRegistry.meter( name( metricPrefix, metricName, METER ) ).mark();
                 Timer.Context context = metricRegistry.timer( name( metricPrefix, metricName, TIMER ) ).time();
                 try
                 {

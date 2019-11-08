@@ -49,6 +49,7 @@
         <datastaxVersion>3.7.2</datastaxVersion>
         <cassandraUnitVersion>3.7.1.0</cassandraUnitVersion>
         <hibernateVersion>5.4.4.Final</hibernateVersion>
+        <metricsVersion>4.0.2</metricsVersion>
         <h2Version>1.4.188</h2Version>
     </properties>
 
@@ -60,6 +61,11 @@
                 <version>24</version>
                 <type>pom</type>
                 <scope>import</scope>
+            </dependency>
+            <dependency>
+                <groupId>io.dropwizard.metrics</groupId>
+                <artifactId>metrics-core</artifactId>
+                <version>${metricsVersion}</version>
             </dependency>
         </dependencies>
     </dependencyManagement>
@@ -76,6 +82,10 @@
         <dependency>
             <groupId>commons-lang</groupId>
             <artifactId>commons-lang</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>io.dropwizard.metrics</groupId>
+            <artifactId>metrics-core</artifactId>
         </dependency>
 
         <dependency>

@@ -12,13 +12,13 @@ import java.util.Objects;
 @Table( name = "pathmap", readConsistency = "QUORUM", writeConsistency = "QUORUM" )
 public class DtxPathMap implements PathMap
 {
-    @PartitionKey
+    @PartitionKey(0)
     private String fileSystem;
 
-    @ClusteringColumn(0)
+    @PartitionKey(1)
     private String parentPath;
 
-    @ClusteringColumn(1)
+    @ClusteringColumn
     private String filename;
 
     @Column

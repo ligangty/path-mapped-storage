@@ -29,7 +29,7 @@ public class CassandraPathDBUtils
                         + "size bigint,"
                         + "filestorage varchar,"
                         + "checksum varchar,"
-                        + "PRIMARY KEY (filesystem, parentpath, filename)"
+                        + "PRIMARY KEY ((filesystem, parentpath), filename)"
                         + ");";
     }
 

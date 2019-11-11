@@ -28,7 +28,6 @@ import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 
-import static org.apache.commons.codec.digest.DigestUtils.md5Hex;
 import static org.apache.commons.lang.StringUtils.isNotBlank;
 import static org.commonjava.storage.pathmapped.util.CassandraPathDBUtils.*;
 import static org.commonjava.storage.pathmapped.util.PathMapUtils.ROOT_DIR;
@@ -107,14 +106,14 @@ public class CassandraPathDB
         reclaimMapper = manager.mapper( DtxReclaim.class, keyspace );
         fileChecksumMapper = manager.mapper( DtxFileChecksum.class, keyspace );
 
-        preparedSingleExistQuery = session.prepare( "SELECT count(*) FROM " + keyspace
-                                                                    + ".pathmap WHERE filesystem=? and subsystem=? and parentpath=? and filename=?;" );
+        preparedSingleExistQuery = session.prepare(
+                        "SELECT count(*) FROM " + keyspace + ".pathmap WHERE filesystem=? and parentpath=? and filename=?;" );
 
         preparedDoubleExistQuery = session.prepare( "SELECT count(*) FROM " + keyspace
-                                                                    + ".pathmap WHERE filesystem=? and subsystem=? and parentpath=? and filename in (?,?);" );
+                                                                    + ".pathmap WHERE filesystem=? and parentpath=? and filename in (?,?);" );
 
-        preparedListQuery = session.prepare(
-                        "SELECT * FROM " + keyspace + ".pathmap WHERE filesystem=? and subsystem=? and parentpath=?;" );
+        preparedListQuery =
+                        session.prepare( "SELECT * FROM " + keyspace + ".pathmap WHERE filesystem=? and parentpath=?;" );
     }
 
     @Override
@@ -135,7 +134,7 @@ public class CassandraPathDB
     public List<PathMap> list( String fileSystem, String path )
     {
         String parentPath = normalizeParentPath( path );
-        BoundStatement bound = preparedListQuery.bind( fileSystem, calculateSubsystem( parentPath ), parentPath );
+        BoundStatement bound = preparedListQuery.bind( fileSystem, parentPath );
         ResultSet result = session.execute( bound );
         Result<DtxPathMap> ret = pathMapMapper.map( result );
         return new ArrayList<>( ret.all() );
@@ -162,7 +161,7 @@ public class CassandraPathDB
             logger.debug( "getPathMap::null, parentPath:{}, filename:{}", parentPath, filename );
             return null;
         }
-        return pathMapMapper.get( fileSystem, calculateSubsystem( parentPath ), parentPath, filename );
+        return pathMapMapper.get( fileSystem, parentPath, filename );
     }
 
     @Override
@@ -193,11 +192,11 @@ public class CassandraPathDB
         BoundStatement bound;
         if ( filename.endsWith( "/" ) )
         {
-            bound = preparedSingleExistQuery.bind( fileSystem, calculateSubsystem( parentPath ), parentPath, filename );
+            bound = preparedSingleExistQuery.bind( fileSystem, parentPath, filename );
         }
         else
         {
-            bound = preparedDoubleExistQuery.bind( fileSystem, calculateSubsystem( parentPath ), parentPath, filename, filename + "/" );
+            bound = preparedDoubleExistQuery.bind( fileSystem, parentPath, filename, filename + "/" );
         }
         ResultSet result = session.execute( bound );
         long count = result.one().get( 0, Long.class );
@@ -211,7 +210,6 @@ public class CassandraPathDB
         pathMap.setFileSystem( fileSystem );
         String parentPath = getParentPath( path );
         String filename = getFilename( path );
-        pathMap.setSubSystem( calculateSubsystem( parentPath ) );
         pathMap.setParentPath( parentPath );
         pathMap.setFilename( filename );
         pathMap.setCreation( date );
@@ -285,7 +283,7 @@ public class CassandraPathDB
         String parentPath = getParentPath( path );
         String filename = getFilename( path ) + "/";
 
-        BoundStatement bound = preparedSingleExistQuery.bind( fileSystem, calculateSubsystem( parentPath ), parentPath, filename );
+        BoundStatement bound = preparedSingleExistQuery.bind( fileSystem, parentPath, filename );
         ResultSet result = session.execute( bound );
         long count = result.one().get( 0, Long.class );
         return count > 0;
@@ -301,7 +299,7 @@ public class CassandraPathDB
         String parentPath = getParentPath( path );
         String filename = getFilename( path );
 
-        BoundStatement bound = preparedSingleExistQuery.bind( fileSystem, calculateSubsystem( parentPath ), parentPath, filename );
+        BoundStatement bound = preparedSingleExistQuery.bind( fileSystem, parentPath, filename );
         ResultSet result = session.execute( bound );
         long count = result.one().get( 0, Long.class );
         return count > 0;
@@ -325,7 +323,7 @@ public class CassandraPathDB
         }
 
         logger.debug( "Delete pathMap, {}", pathMap );
-        pathMapMapper.delete( pathMap.getFileSystem(), ( (DtxPathMap) pathMap ).getSubSystem(), pathMap.getParentPath(), pathMap.getFilename() );
+        pathMapMapper.delete( pathMap.getFileSystem(), pathMap.getParentPath(), pathMap.getFilename() );
 
 
         ReverseMap reverseMap = deleteFromReverseMap( pathMap.getFileId(), marshall( fileSystem, path ) );
@@ -408,9 +406,8 @@ public class CassandraPathDB
         }
 
         String toFilename = getFilename( toPath );
-        pathMapMapper.save( new DtxPathMap( toFileSystem, calculateSubsystem( toParentPath ), toParentPath, toFilename,
-                                            pathMap.getFileId(), pathMap.getCreation(), pathMap.getSize(),
-                                            pathMap.getFileStorage(), pathMap.getChecksum() ) );
+        pathMapMapper.save( new DtxPathMap( toFileSystem, toParentPath, toFilename, pathMap.getFileId(),
+                                            pathMap.getCreation(), pathMap.getSize(), pathMap.getFileStorage(), pathMap.getChecksum() ) );
         return true;
     }
 
@@ -431,7 +428,7 @@ public class CassandraPathDB
         String parentPath = getParentPath( path );
         String filename = getFilename( path );
 
-        BoundStatement bound = preparedSingleExistQuery.bind( fileSystem, calculateSubsystem( parentPath ), parentPath, filename );
+        BoundStatement bound = preparedSingleExistQuery.bind( fileSystem, parentPath, filename );
         ResultSet result = session.execute( bound );
         long count = result.one().get( 0, Long.class );
         if ( count > 0 )
@@ -442,14 +439,12 @@ public class CassandraPathDB
 
         DtxPathMap pathMap = new DtxPathMap();
         pathMap.setFileSystem( fileSystem );
-        pathMap.setSubSystem( calculateSubsystem( parentPath ) );
         pathMap.setParentPath( parentPath );
         pathMap.setFilename( filename );
 
         final List<DtxPathMap> parents = getParentsBottomUp( pathMap, ( fSystem, pPath, fName ) -> {
             DtxPathMap p = new DtxPathMap();
             p.setFileSystem( fSystem );
-            p.setSubSystem( calculateSubsystem( pPath ) );
             p.setParentPath( pPath );
             p.setFilename( fName );
             return p;
@@ -498,24 +493,6 @@ public class CassandraPathDB
             return ret;
         }
         return ret - Duration.ofHours( gcGracePeriodInHours ).toMillis();
-    }
-
-    private static final int SUBSYSTEM_LEN = 6;
-
-    /**
-     * Return first 6 letters from md5Hex of parentPath. This makes sure the entries under same parentPath
-     * are located in same partition so the we can query/list them real quick.
-     */
-    private String calculateSubsystem( String parentPath )
-    {
-        if ( config.isSubsystemEnabled() )
-        {
-            return md5Hex( parentPath ).substring( 0, SUBSYSTEM_LEN );
-        }
-        else
-        {
-            return "DEFAULT";
-        }
     }
 
 }

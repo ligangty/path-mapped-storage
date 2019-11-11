@@ -9,7 +9,7 @@ public interface PathMappedStorageConfig
 
     String getFileChecksumAlgorithm();
 
-    default boolean isSubsystemEnabled() { return true; }
+    boolean isSubsystemEnabled( String fileSystem );
 
     Object getProperty( String key );
 

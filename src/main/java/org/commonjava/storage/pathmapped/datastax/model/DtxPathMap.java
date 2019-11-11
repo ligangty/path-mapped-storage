@@ -12,11 +12,8 @@ import java.util.Objects;
 @Table( name = "pathmap", readConsistency = "QUORUM", writeConsistency = "QUORUM" )
 public class DtxPathMap implements PathMap
 {
-    @PartitionKey(0)
+    @PartitionKey
     private String fileSystem;
-
-    @PartitionKey(1)
-    private String subSystem;
 
     @ClusteringColumn(0)
     private String parentPath;
@@ -43,10 +40,9 @@ public class DtxPathMap implements PathMap
     {
     }
 
-    public DtxPathMap( String fileSystem, String subSystem, String parentPath, String filename, String fileId, Date creation, long size, String fileStorage, String checksum )
+    public DtxPathMap( String fileSystem, String parentPath, String filename, String fileId, Date creation, long size, String fileStorage, String checksum )
     {
         this.fileSystem = fileSystem;
-        this.subSystem = subSystem;
         this.parentPath = parentPath;
         this.filename = filename;
         this.fileId = fileId;
@@ -104,16 +100,6 @@ public class DtxPathMap implements PathMap
     public void setFileSystem( String fileSystem )
     {
         this.fileSystem = fileSystem;
-    }
-
-    public String getSubSystem()
-    {
-        return subSystem;
-    }
-
-    public void setSubSystem( String subSystem )
-    {
-        this.subSystem = subSystem;
     }
 
     public String getParentPath()

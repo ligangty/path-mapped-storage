@@ -9,8 +9,6 @@ public interface PathMappedStorageConfig
 
     String getFileChecksumAlgorithm();
 
-    default boolean isSubsystemEnabled() { return true; }
-
     Object getProperty( String key );
 
     int getGCBatchSize();

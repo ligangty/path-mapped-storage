@@ -22,7 +22,6 @@ public class CassandraPathDBUtils
     {
         return "CREATE TABLE IF NOT EXISTS " + keyspace + ".pathmap ("
                         + "filesystem varchar,"
-                        + "subsystem varchar,"
                         + "parentpath varchar,"
                         + "filename varchar,"
                         + "fileid varchar,"
@@ -30,7 +29,7 @@ public class CassandraPathDBUtils
                         + "size bigint,"
                         + "filestorage varchar,"
                         + "checksum varchar,"
-                        + "PRIMARY KEY ((filesystem, subsystem), parentpath, filename)"
+                        + "PRIMARY KEY ((filesystem, parentpath), filename)"
                         + ");";
     }
 
@@ -63,5 +62,4 @@ public class CassandraPathDBUtils
                         + "PRIMARY KEY (checksum)"
                         + ");";
     }
-
 }

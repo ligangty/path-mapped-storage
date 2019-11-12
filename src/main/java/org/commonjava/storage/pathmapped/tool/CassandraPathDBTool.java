@@ -57,7 +57,7 @@ public class CassandraPathDBTool
         MappingManager manager = new MappingManager( session );
         pathMapMapper = manager.mapper( DtxPathMap.class, keyspace );
 
-        cassandraPathDB = new CassandraPathDB( new DefaultPathMappedStorageConfig(), session, filesystem );
+        cassandraPathDB = new CassandraPathDB( new DefaultPathMappedStorageConfig(), session, keyspace );
     }
 
     public void get( String absolutePath, Consumer<DtxPathMap> consumer )
@@ -70,47 +70,75 @@ public class CassandraPathDBTool
         return cassandraPathDB.delete( filesystem, absolutePath );
     }
 
-    public void traverse( String rootPath, Consumer<String> consumer )
+    private static class PathAndType
     {
-        TreeTraverser<String> traverser = new TreeTraverser<String>()
+        enum Type
+        {
+            FILE, DIR
+        }
+
+        String path;
+
+        Type type;
+
+        public PathAndType( String path, Type type )
+        {
+            this.path = path;
+            this.type = type;
+        }
+    }
+
+    public void traverse( String rootPath, String listType, Consumer<String> consumer )
+    {
+        TreeTraverser<PathAndType> traverser = new TreeTraverser<PathAndType>()
         {
             @Override
-            public Iterable<String> children( String s )
+            public Iterable<PathAndType> children( PathAndType pnt )
             {
-                String parentPath = s;
-                List<String> children = new ArrayList<>();
+                String parentPath = pnt.path;
+                List<PathAndType> children = new ArrayList<>();
                 BoundStatement bound = preparedListQuery.bind( filesystem, parentPath );
                 ResultSet result = session.execute( bound );
                 pathMapMapper.map( result ).all().forEach( dtxPathMap -> {
                     String path = Paths.get( dtxPathMap.getParentPath(), dtxPathMap.getFilename() ).toString();
-                    children.add( path );
+                    PathAndType child;
+                    if ( dtxPathMap.getFileId() == null )
+                    {
+                        child = new PathAndType( path, PathAndType.Type.DIR );
+                    }
+                    else
+                    {
+                        child = new PathAndType( path, PathAndType.Type.FILE );
+                    }
+                    children.add( child );
                 } );
                 return children;
             }
         };
-        traverser.preOrderTraversal( rootPath ).forEach( s -> consumer.accept( s ) );
+        traverser.preOrderTraversal( new PathAndType( rootPath, PathAndType.Type.DIR ) ).forEach( pnt -> {
+            if ( listType.equals( "all" ) || pnt.type.name().equalsIgnoreCase( listType ) )
+            {
+                consumer.accept( pnt.path );
+            }
+        } );
     }
-
 
     public static void main( String[] args )
     {
         Options options = new Options();
 
-        OptionGroup connectOptions = new OptionGroup();
-
         Option optHost = new Option( "h", "host", true, "host (default localhost)" );
-        connectOptions.addOption( optHost );
+        options.addOption( optHost );
 
         Option optPort = new Option( "p", "port", true, "port (default 9042)" );
-        connectOptions.addOption( optPort );
+        options.addOption( optPort );
 
         Option optUser = new Option( "u", "user", true, "username" );
-        connectOptions.addOption( optUser );
+        options.addOption( optUser );
 
         Option optPass = new Option( "P", "pass", true, "password" );
-        connectOptions.addOption( optPass );
+        options.addOption( optPass );
 
-        options.addOptionGroup( connectOptions );
 
         OptionGroup operationalOptions = new OptionGroup();
 
@@ -121,8 +149,13 @@ public class CassandraPathDBTool
         Option optDelete = new Option( "d", "delete", true, "delete specified file" );
         operationalOptions.addOption( optDelete );
 
+/*
         Option optGet = new Option( null, "get", true, "get specified file" );
         operationalOptions.addOption( optGet );
+*/
+
+        Option optInfo = new Option( "i", "info", true, "get specified path info" );
+        operationalOptions.addOption( optInfo );
 
         options.addOptionGroup( operationalOptions );
 
@@ -133,6 +166,9 @@ public class CassandraPathDBTool
         Option optFilesystem = new Option( "f", "filesystem", true, "filesystem" );
         optFilesystem.setRequired( true );
         options.addOption( optFilesystem );
+
+        Option optType = new Option( "t", "type", true, "filter list result by type (file/dir)" );
+        options.addOption( optType );
 
         CommandLineParser parser = new DefaultParser();
         HelpFormatter formatter = new HelpFormatter();
@@ -164,24 +200,32 @@ public class CassandraPathDBTool
         Cluster cluster = builder.build();
         Session session = cluster.connect();
 
-        CassandraPathDBTool viewer = new CassandraPathDBTool( session, keyspace, filesystem );
+        CassandraPathDBTool pathDBTool = new CassandraPathDBTool( session, keyspace, filesystem );
 
-        if ( cmd.hasOption( optGet.getLongOpt() ) )
+        if ( cmd.hasOption( optInfo.getOpt() ) )
+        {
+            String getPath = cmd.getOptionValue( optInfo.getOpt() );
+            pathDBTool.get( getPath, o -> System.out.println( o ) );
+        }
+/*
+        else if ( cmd.hasOption( optGet.getLongOpt() ) )
         {
             String getPath = cmd.getOptionValue( optGet.getLongOpt() );
             viewer.get( getPath, o -> System.out.println( o ) );
         }
+*/
         else if ( cmd.hasOption( optDelete.getOpt() ) )
         {
             String deletePath = cmd.getOptionValue( optDelete.getOpt() );
-            boolean deleted = viewer.delete( deletePath );
+            boolean deleted = pathDBTool.delete( deletePath );
             System.out.println( "Deleted: " + deleted );
         }
         else if ( cmd.hasOption( optList.getOpt() ) )
         {
             String listRoot = cmd.getOptionValue( optList.getOpt(), "/" );
-            System.out.println( "$ ls -l " + listRoot );
-            viewer.traverse( listRoot, s -> System.out.println( s ) );
+            String listType = cmd.getOptionValue( optType.getOpt(), "all" );
+            System.out.println( "$ ls -l " + listRoot + " -t " + listType );
+            pathDBTool.traverse( listRoot, listType, s -> System.out.println( s ) );
         }
 
         session.close();

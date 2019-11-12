@@ -59,11 +59,11 @@ public abstract class AbstractCassandraFMTest
     @Rule
     public TestName name = new TestName();
 
-    private static CassandraPathDB pathDB;
+    static CassandraPathDB pathDB;
 
     PathMappedFileManager fileManager;
 
-    private static final String KEYSPACE = "test";
+    static final String KEYSPACE = "test";
 
     static final String TEST_FS = "test";
 

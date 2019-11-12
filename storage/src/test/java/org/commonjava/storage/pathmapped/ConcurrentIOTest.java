@@ -16,6 +16,8 @@
 package org.commonjava.storage.pathmapped;
 
 import org.apache.commons.io.IOUtils;
+import org.hamcrest.CoreMatchers;
+import org.junit.Assert;
 import org.junit.Ignore;
 import org.junit.Test;
 
@@ -44,7 +46,7 @@ public class ConcurrentIOTest extends AbstractCassandraFMTest
         String src = "This is a test";
         try (OutputStream os = fileManager.openOutputStream( TEST_FS, f.getPath() ))
         {
-            assertNotNull( os );
+            Assert.assertNotNull( os );
             IOUtils.write( src.getBytes(), os );
         }
 
@@ -57,7 +59,7 @@ public class ConcurrentIOTest extends AbstractCassandraFMTest
             executor.execute( () -> {
                 try (InputStream is = fileManager.openInputStream( TEST_FS, f.getPath() ))
                 {
-                    assertNotNull( is );
+                    Assert.assertNotNull( is );
                     String result = new String( IOUtils.toByteArray( is ), Charset.defaultCharset() );
                     if ( !src.equals( result ) )
                     {
@@ -75,7 +77,7 @@ public class ConcurrentIOTest extends AbstractCassandraFMTest
             } );
         }
         latch.await();
-        assertThat( failures.get(), equalTo( 0 ) );
+        Assert.assertThat( failures.get(), CoreMatchers.equalTo( 0 ) );
     }
 
     @Test
@@ -87,6 +89,6 @@ public class ConcurrentIOTest extends AbstractCassandraFMTest
         //      one will be used in future in concurrent mode
 
         //TODO: question: so does this mean there will be some dirty-read here? like write-read-write case?
-        fail( "concurrent write not support now!" );
+        Assert.fail( "concurrent write not support now!" );
     }
 }

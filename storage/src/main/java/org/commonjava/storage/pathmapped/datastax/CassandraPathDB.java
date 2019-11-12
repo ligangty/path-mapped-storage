@@ -151,7 +151,7 @@ public class CassandraPathDB
         return -1;
     }
 
-    private DtxPathMap getPathMap( String fileSystem, String path )
+    public DtxPathMap getPathMap( String fileSystem, String path )
     {
         String parentPath = getParentPath( path );
         String filename = getFilename( path );

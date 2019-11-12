@@ -13,34 +13,18 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.commonjava.storage.pathmapped;
+package org.commonjava.storage.pathmapped.tool;
 
-import org.apache.commons.io.IOUtils;
-import org.commonjava.storage.pathmapped.tool.CassandraPathDBTool;
-import org.junit.Ignore;
 import org.junit.Test;
-
-import java.io.File;
 import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
-import java.nio.charset.Charset;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.UUID;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.Executor;
-import java.util.concurrent.Executors;
-import java.util.concurrent.atomic.AtomicInteger;
 
 import static org.hamcrest.CoreMatchers.equalTo;
-import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertThat;
-import static org.junit.Assert.fail;
 
-public class CassandraPathDBToolTest
-                extends AbstractCassandraFMTest
+public class CassandraPathDBToolTest extends AbstractCassandraTest
 {
     private String content = "This is a test";
 

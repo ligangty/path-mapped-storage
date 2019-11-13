@@ -46,6 +46,8 @@ public class CassandraPathDB
 
     private Session session;
 
+    private Cluster cluster;
+
     private Mapper<DtxPathMap> pathMapMapper;
 
     private Mapper<DtxReverseMap> reverseMapMapper;
@@ -83,7 +85,7 @@ public class CassandraPathDB
             logger.debug( "Build with credentials, user: {}, pass: ****", username );
             builder.withCredentials( username, password );
         }
-        Cluster cluster = builder.build();
+        cluster = builder.build();
 
         logger.debug( "Connecting to Cassandra, host:{}, port:{}", host, port );
         session = cluster.connect();
@@ -120,8 +122,12 @@ public class CassandraPathDB
     @Override
     public void close()
     {
-        session.close();
-        logger.debug( "Cassandra connection closed" );
+        if ( cluster != null ) // close only if the session and cluster were built by self
+        {
+            session.close();
+            cluster.close();
+            logger.debug( "Cassandra connection closed" );
+        }
     }
 
     public Session getSession()

@@ -1,5 +1,6 @@
 package org.commonjava.storage.pathmapped.core;
 
+import org.commonjava.storage.pathmapped.spi.FileInfo;
 import org.commonjava.storage.pathmapped.spi.PathDB;
 import org.commonjava.storage.pathmapped.spi.PhysicalStore;
 import org.commonjava.storage.pathmapped.util.ChecksumCalculator;

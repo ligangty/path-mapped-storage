@@ -16,6 +16,8 @@
 package org.commonjava.storage.pathmapped;
 
 import org.apache.commons.io.IOUtils;
+import org.hamcrest.CoreMatchers;
+import org.junit.Assert;
 import org.junit.Test;
 
 import java.io.IOException;
@@ -46,7 +48,7 @@ public class ChecksumDedupeTest
         String pathStorage1 = fileManager.getFileStoragePath( TEST_FS, path1 );
         String pathStorage2 = fileManager.getFileStoragePath( TEST_FS, path2 );
 
-        assertThat( pathStorage1, equalTo( pathStorage2 ) );
+        Assert.assertThat( pathStorage1, CoreMatchers.equalTo( pathStorage2 ) );
 
         checkPhysicalFile( 2, 1, pathStorage1 );
 
@@ -66,7 +68,7 @@ public class ChecksumDedupeTest
         final String pathStorage1 = fileManager.getFileStoragePath( TEST_FS, path1 );
         final String pathStorage2 = fileManager.getFileStoragePath( TEST_FS, path2 );
 
-        assertThat( pathStorage1, not( pathStorage2 ) );
+        Assert.assertThat( pathStorage1, CoreMatchers.not( pathStorage2 ) );
 
         checkPhysicalFile( 2, 2, pathStorage1, pathStorage2 );
 
@@ -107,7 +109,7 @@ public class ChecksumDedupeTest
 
         writeWithContent( TEST_FS, path1, simpleContent );
         final String newPathStorage1 = fileManager.getFileStoragePath( TEST_FS, path1 );
-        assertThat(newPathStorage1, not(pathStorage1));
+        Assert.assertThat( newPathStorage1, CoreMatchers.not( pathStorage1));
         checkPhysicalFile( 1, 1, newPathStorage1 );
         checkRead( TEST_FS, path1, true, simpleContent );
         checkRead( TEST_FS, path2, false, null );
@@ -137,7 +139,7 @@ public class ChecksumDedupeTest
             }
             if ( !matched )
             {
-                fail( String.format( "Failed: not matched for %s in all paths %s", pc, paths ) );
+                Assert.fail( String.format( "Failed: not matched for %s in all paths %s", pc, paths ) );
             }
         }
     }
@@ -150,7 +152,7 @@ public class ChecksumDedupeTest
              .filter( p -> Files.isRegularFile( p ) )
              .map( Path::toString )
              .forEach( paths::add );
-        assertThat( paths.size(), equalTo( fileCount ) );
+        Assert.assertThat( paths.size(), CoreMatchers.equalTo( fileCount ) );
         return paths;
     }
 
@@ -169,12 +171,12 @@ public class ChecksumDedupeTest
         {
             if ( exists )
             {
-                assertThat( is, notNullValue() );
-                assertThat( IOUtils.toString( is ), equalTo( expected ) );
+                Assert.assertThat( is, CoreMatchers.notNullValue() );
+                Assert.assertThat( IOUtils.toString( is ), CoreMatchers.equalTo( expected ) );
             }
             else
             {
-                assertThat( is, nullValue() );
+                Assert.assertThat( is, CoreMatchers.nullValue() );
             }
         }
     }

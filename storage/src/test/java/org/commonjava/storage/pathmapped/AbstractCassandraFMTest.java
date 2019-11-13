@@ -15,15 +15,14 @@
  */
 package org.commonjava.storage.pathmapped;
 
-import com.datastax.driver.core.Cluster;
 import com.datastax.driver.core.Session;
 import org.apache.commons.io.IOUtils;
 import org.cassandraunit.utils.EmbeddedCassandraServerHelper;
 import org.commonjava.storage.pathmapped.config.DefaultPathMappedStorageConfig;
 import org.commonjava.storage.pathmapped.core.FileBasedPhysicalStore;
-import org.commonjava.storage.pathmapped.core.FileInfo;
 import org.commonjava.storage.pathmapped.core.PathMappedFileManager;
-import org.commonjava.storage.pathmapped.datastax.CassandraPathDB;
+import org.commonjava.storage.pathmapped.pathdb.datastax.CassandraPathDB;
+import org.commonjava.storage.pathmapped.spi.FileInfo;
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Before;
@@ -41,9 +40,9 @@ import java.util.HashMap;
 import java.util.Map;
 
 import static java.lang.Thread.sleep;
-import static org.commonjava.storage.pathmapped.util.CassandraPathDBUtils.PROP_CASSANDRA_HOST;
-import static org.commonjava.storage.pathmapped.util.CassandraPathDBUtils.PROP_CASSANDRA_KEYSPACE;
-import static org.commonjava.storage.pathmapped.util.CassandraPathDBUtils.PROP_CASSANDRA_PORT;
+import static org.commonjava.storage.pathmapped.pathdb.datastax.util.CassandraPathDBUtils.PROP_CASSANDRA_HOST;
+import static org.commonjava.storage.pathmapped.pathdb.datastax.util.CassandraPathDBUtils.PROP_CASSANDRA_KEYSPACE;
+import static org.commonjava.storage.pathmapped.pathdb.datastax.util.CassandraPathDBUtils.PROP_CASSANDRA_PORT;
 
 public abstract class AbstractCassandraFMTest
 {

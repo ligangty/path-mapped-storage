@@ -16,6 +16,7 @@
 package org.commonjava.storage.pathmapped;
 
 import org.apache.commons.io.output.ByteArrayOutputStream;
+import org.junit.Assert;
 import org.junit.Test;
 
 import java.io.ByteArrayInputStream;
@@ -25,8 +26,6 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.util.ArrayList;
 import java.util.List;
-
-import static org.junit.Assert.fail;
 
 public class BinaryFileTest
         extends AbstractCassandraFMTest
@@ -73,7 +72,7 @@ public class BinaryFileTest
 
         if ( !failures.isEmpty() )
         {
-            fail( "Failures: " + failures );
+            Assert.fail( "Failures: " + failures );
         }
     }
 }

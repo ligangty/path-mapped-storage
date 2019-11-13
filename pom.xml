@@ -34,9 +34,11 @@
     <modules>
         <module>tool</module>
         <module>storage</module>
+        <module>pathdb</module>
+        <module>common</module>
     </modules>
 
-    <name>path-mapped :: Parent</name>
+    <name>path-mapped :: parent</name>
 
     <inceptionYear>2019</inceptionYear>
 
@@ -63,9 +65,30 @@
         <dependencies>
             <dependency>
                 <groupId>org.commonjava.util</groupId>
+                <artifactId>path-mapped-common</artifactId>
+                <version>0.1-SNAPSHOT</version>
+            </dependency>
+            <dependency>
+                <groupId>org.commonjava.util</groupId>
                 <artifactId>path-mapped-storage</artifactId>
                 <version>0.1-SNAPSHOT</version>
             </dependency>
+            <dependency>
+                <groupId>org.commonjava.util</groupId>
+                <artifactId>path-mapped-pathdb</artifactId>
+                <version>0.1-SNAPSHOT</version>
+            </dependency>
+            <dependency>
+                <groupId>org.commonjava.util</groupId>
+                <artifactId>path-mapped-pathdb-datastax</artifactId>
+                <version>0.1-SNAPSHOT</version>
+            </dependency>
+            <dependency>
+                <groupId>org.commonjava.util</groupId>
+                <artifactId>path-mapped-pathdb-jpa</artifactId>
+                <version>0.1-SNAPSHOT</version>
+            </dependency>
+
             <dependency>
                 <groupId>org.commonjava.boms</groupId>
                 <artifactId>web-commons-bom</artifactId>

@@ -1,6 +1,7 @@
 package org.commonjava.storage.pathmapped.core;
 
 import org.commonjava.storage.pathmapped.config.PathMappedStorageConfig;
+import org.commonjava.storage.pathmapped.spi.FileInfo;
 import org.commonjava.storage.pathmapped.model.PathMap;
 import org.commonjava.storage.pathmapped.model.Reclaim;
 import org.commonjava.storage.pathmapped.spi.PathDB;

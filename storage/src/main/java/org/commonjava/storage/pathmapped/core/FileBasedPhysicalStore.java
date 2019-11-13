@@ -1,5 +1,6 @@
 package org.commonjava.storage.pathmapped.core;
 
+import org.commonjava.storage.pathmapped.spi.FileInfo;
 import org.commonjava.storage.pathmapped.spi.PhysicalStore;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -14,7 +15,6 @@ import java.nio.file.Files;
 import java.nio.file.Paths;
 
 import static org.commonjava.storage.pathmapped.util.PathMapUtils.getRandomFileId;
-import static org.commonjava.storage.pathmapped.util.PathMapUtils.getStorageDir;
 
 public class FileBasedPhysicalStore implements PhysicalStore
 {
@@ -36,6 +36,19 @@ public class FileBasedPhysicalStore implements PhysicalStore
         fileInfo.setFileId( id );
         fileInfo.setFileStorage( Paths.get( dir, id ).toString() );
         return fileInfo;
+    }
+
+    private static final int LEVEL_1_DIR_LENGTH = 2;
+
+    private static final int LEVEL_2_DIR_LENGTH = 2;
+
+    private static final int DIR_LENGTH = LEVEL_1_DIR_LENGTH + LEVEL_2_DIR_LENGTH;
+
+    private String getStorageDir( String fileId )
+    {
+        String folder = fileId.substring( 0, LEVEL_1_DIR_LENGTH );
+        String subFolder = fileId.substring( LEVEL_1_DIR_LENGTH, DIR_LENGTH );
+        return folder + "/" + subFolder;
     }
 
     @Override

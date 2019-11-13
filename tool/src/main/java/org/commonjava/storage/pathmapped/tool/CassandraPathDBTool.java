@@ -17,8 +17,8 @@ import org.apache.commons.cli.OptionGroup;
 import org.apache.commons.cli.Options;
 import org.apache.commons.cli.ParseException;
 import org.commonjava.storage.pathmapped.config.DefaultPathMappedStorageConfig;
-import org.commonjava.storage.pathmapped.datastax.CassandraPathDB;
-import org.commonjava.storage.pathmapped.datastax.model.DtxPathMap;
+import org.commonjava.storage.pathmapped.pathdb.datastax.CassandraPathDB;
+import org.commonjava.storage.pathmapped.pathdb.datastax.model.DtxPathMap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

@@ -22,17 +22,21 @@ public class DtxReclaim implements Reclaim
     private String fileId;
 
     @Column
+    private String checksum;
+
+    @Column
     private String storage;
 
     public DtxReclaim()
     {
     }
 
-    public DtxReclaim( String fileId, Date deletion, String storage )
+    public DtxReclaim( String fileId, Date deletion, String storage, String checksum )
     {
         this.fileId = fileId;
         this.deletion = deletion;
         this.storage = storage;
+        this.checksum = checksum;
     }
 
     public int getPartition()
@@ -77,6 +81,16 @@ public class DtxReclaim implements Reclaim
         this.storage = storage;
     }
 
+    public String getChecksum()
+    {
+        return checksum;
+    }
+
+    public void setChecksum( String checksum )
+    {
+        this.checksum = checksum;
+    }
+
     @Override
     public boolean equals( Object o )
     {
@@ -98,6 +112,6 @@ public class DtxReclaim implements Reclaim
     public String toString()
     {
         return "DtxReclaim{" + "partition=" + partition + ", deletion=" + deletion + ", fileId='" + fileId + '\''
-                        + ", storage='" + storage + '\'' + '}';
+                        + ", checksum='" + checksum + '\'' + ", storage='" + storage + '\'' + '}';
     }
 }

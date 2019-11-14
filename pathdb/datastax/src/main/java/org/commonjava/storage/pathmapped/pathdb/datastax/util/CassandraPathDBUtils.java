@@ -48,6 +48,7 @@ public class CassandraPathDBUtils
                         + "partition int,"
                         + "deletion timestamp,"
                         + "fileid varchar,"
+                        + "checksum varchar,"
                         + "storage varchar,"
                         + "PRIMARY KEY (partition, deletion, fileid)"
                         + ");";

@@ -260,7 +260,7 @@ public class CassandraPathDB
                 ( (DtxPathMap) pathMap ).setChecksum( existedChecksum.getChecksum() );
                 // Need to mark the generated file storage path as reclaimed to remove it.
                 final String deprecatedFileId = PathMapUtils.getRandomFileId();
-                reclaim( deprecatedFileId, deprecatedStorage );
+                reclaim( deprecatedFileId, deprecatedStorage, checksum );
             }
             else
             {
@@ -349,7 +349,7 @@ public class CassandraPathDB
             }
 
             // reclaim, but not remove from reverse table immediately (for race-detection/double-check)
-            reclaim( fileId, pathMap.getFileStorage() );
+            reclaim( fileId, pathMap.getFileStorage(), checksum.getChecksum() );
 
         }
         return true;
@@ -369,9 +369,9 @@ public class CassandraPathDB
         session.execute( "UPDATE " + keyspace + ".reversemap SET paths = paths + {'" + path + "'} WHERE fileid=?;", fileId );
     }
 
-    private void reclaim( String fileId, String fileStorage )
+    private void reclaim( String fileId, String fileStorage, String checksum )
     {
-        DtxReclaim reclaim = new DtxReclaim( fileId, new Date(), fileStorage );
+        DtxReclaim reclaim = new DtxReclaim( fileId, new Date(), fileStorage, checksum );
         logger.debug( "Reclaim, {}", reclaim );
         reclaimMapper.save( reclaim );
     }

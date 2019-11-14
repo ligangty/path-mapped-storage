@@ -81,15 +81,11 @@ public class DtxFileChecksum
     public boolean equals( Object o )
     {
         if ( this == o )
-        {
             return true;
-        }
         if ( o == null || getClass() != o.getClass() )
-        {
             return false;
-        }
         DtxFileChecksum that = (DtxFileChecksum) o;
-        return fileId.equals( that.fileId );
+        return checksum.equals( that.checksum );
     }
 
     @Override

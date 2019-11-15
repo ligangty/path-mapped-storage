@@ -349,7 +349,7 @@ public class CassandraPathDB
             }
 
             // reclaim, but not remove from reverse table immediately (for race-detection/double-check)
-            reclaim( fileId, pathMap.getFileStorage(), checksum.getChecksum() );
+            reclaim( fileId, pathMap.getFileStorage(), ( checksum != null ? checksum.getChecksum() : null ) );
 
         }
         return true;

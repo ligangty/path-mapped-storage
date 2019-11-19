@@ -336,21 +336,17 @@ public class CassandraPathDB
         ReverseMap reverseMap = deleteFromReverseMap( pathMap.getFileId(), PathMapUtils.marshall( fileSystem, path ) );
         logger.debug( "Updated reverseMap, {}", reverseMap );
 
-        // need to check store checksum first to decide if
         if ( reverseMap == null || reverseMap.getPaths() == null || reverseMap.getPaths().isEmpty() )
         {
             // clean checksum in checksum table as no file id refer to it.
-            FileChecksum checksum = fileChecksumMapper.get( pathMap.getChecksum() );
-            if ( checksum != null )
+            String checksum = pathMap.getChecksum();
+            if ( isNotBlank( checksum ) )
             {
-                // update file checksum
                 logger.debug( "Delete file checksum, {}", checksum );
-                fileChecksumMapper.delete( checksum.getChecksum() );
+                fileChecksumMapper.delete( checksum );
             }
-
             // reclaim, but not remove from reverse table immediately (for race-detection/double-check)
-            reclaim( fileId, pathMap.getFileStorage(), ( checksum != null ? checksum.getChecksum() : null ) );
-
+            reclaim( fileId, pathMap.getFileStorage(), checksum );
         }
         return true;
     }

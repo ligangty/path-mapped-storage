@@ -29,18 +29,11 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.nio.charset.Charset;
 import java.nio.file.Paths;
-import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
 
 import static java.lang.Thread.sleep;
-import static org.hamcrest.CoreMatchers.equalTo;
-import static org.hamcrest.CoreMatchers.hasItems;
-import static org.hamcrest.CoreMatchers.notNullValue;
-import static org.hamcrest.CoreMatchers.nullValue;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertThat;
 
 public class SimpleIOTest
         extends AbstractCassandraFMTest
@@ -271,65 +264,6 @@ public class SimpleIOTest
         assertPathWithChecker( ( f, p ) -> fileManager.isDirectory( f, p ), TEST_FS, tempRoot, true );
         assertPathWithChecker( ( f, p ) -> fileManager.isDirectory( f, p ), TEST_FS, tempPathParent, true );
         assertPathWithChecker( ( f, p ) -> fileManager.isDirectory( f, p ), TEST_FS, tempPathSub, true );
-    }
-
-    @Test
-    public void listRootFolder()
-            throws IOException
-    {
-        writeWithContent( fileManager.openOutputStream( TEST_FS, path1 ), simpleContent );
-        List<String> lists = Arrays.asList( fileManager.list( TEST_FS, "/" ) );
-        Assert.assertThat( lists, CoreMatchers.hasItems( "root/" ) );
-    }
-
-    @Test
-    public void listEntriesInSameFolder()
-            throws IOException
-    {
-        List<String> lists = Arrays.asList( fileManager.list( TEST_FS, null ) );
-        Assert.assertThat( lists.isEmpty(), CoreMatchers.equalTo( true ) );
-        final String file3 = "target3.txt";
-        final String path3 = pathSub1 + "/" + file3;
-        writeWithContent( fileManager.openOutputStream( TEST_FS, path1 ), simpleContent );
-        writeWithContent( fileManager.openOutputStream( TEST_FS, path3 ), simpleContent );
-        lists = Arrays.asList( fileManager.list( TEST_FS, pathSub1 ) );
-        Assert.assertThat( lists, CoreMatchers.hasItems( file1, file3 ) );
-        lists = Arrays.asList( fileManager.list( TEST_FS, pathParent ) );
-        Assert.assertThat( lists, CoreMatchers.hasItems( sub1 + "/" ) );
-    }
-
-    @Test
-    public void listEntriesInDiffFolders()
-            throws IOException
-    {
-        writeWithContent( fileManager.openOutputStream( TEST_FS, path1 ), simpleContent );
-        writeWithContent( fileManager.openOutputStream( TEST_FS, path2 ), simpleContent );
-        List<String> lists = Arrays.asList( fileManager.list( TEST_FS, pathParent ) );
-        Assert.assertThat( lists, CoreMatchers.hasItems( sub1 + "/", sub2 + "/" ) );
-
-        lists = Arrays.asList( fileManager.list( TEST_FS, pathSub1 ) );
-        Assert.assertThat( lists, CoreMatchers.hasItems( file1 ) );
-        lists = Arrays.asList( fileManager.list( TEST_FS, pathSub2 ) );
-        Assert.assertThat( lists, CoreMatchers.hasItems( file2 ) );
-    }
-
-    @Test
-    public void listHugeNumOfEntries()
-            throws IOException
-    {
-        int numOfFiles = 500;
-        String[] files = new String[numOfFiles];
-        for ( int i = 0; i < numOfFiles; i++ )
-        {
-            files[i] = "file" + i + ".txt";
-            String filePath = pathSub1 + "/" + files[i];
-            writeWithContent( fileManager.openOutputStream( TEST_FS, filePath ), simpleContent );
-        }
-        long start = System.currentTimeMillis();
-        List<String> lists = Arrays.asList( fileManager.list( TEST_FS, pathSub1 ) );
-        Assert.assertThat( lists, CoreMatchers.hasItems( files ) );
-        long end = System.currentTimeMillis();
-        logger.info( "Listing {} files took {} milliseconds", numOfFiles, end - start );
     }
 
     @Test

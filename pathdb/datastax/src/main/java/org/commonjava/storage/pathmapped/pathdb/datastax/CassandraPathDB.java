@@ -9,6 +9,7 @@ import com.datastax.driver.mapping.Mapper;
 import com.datastax.driver.mapping.MappingManager;
 import com.datastax.driver.mapping.Result;
 
+import com.google.common.collect.TreeTraverser;
 import org.commonjava.storage.pathmapped.pathdb.datastax.model.DtxFileChecksum;
 import org.commonjava.storage.pathmapped.pathdb.datastax.model.DtxPathMap;
 import org.commonjava.storage.pathmapped.pathdb.datastax.model.DtxReclaim;
@@ -25,19 +26,16 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.Closeable;
+import java.nio.file.Paths;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.Consumer;
 
 import static org.apache.commons.lang.StringUtils.isNotBlank;
 import static org.commonjava.storage.pathmapped.util.PathMapUtils.ROOT_DIR;
-import static org.commonjava.storage.pathmapped.util.PathMapUtils.getFilename;
-import static org.commonjava.storage.pathmapped.util.PathMapUtils.getParentPath;
-import static org.commonjava.storage.pathmapped.util.PathMapUtils.getParentsBottomUp;
-import static org.commonjava.storage.pathmapped.util.PathMapUtils.marshall;
-import static org.commonjava.storage.pathmapped.util.PathMapUtils.normalize;
-import static org.commonjava.storage.pathmapped.util.PathMapUtils.normalizeParentPath;
 
 public class CassandraPathDB
                 implements PathDB, Closeable
@@ -138,13 +136,93 @@ public class CassandraPathDB
     /**
      * List files under specified path.
      */
+    @Override
     public List<PathMap> list( String fileSystem, String path )
     {
-        String parentPath = PathMapUtils.normalizeParentPath( path );
+        return list( fileSystem, path, false, 0 );
+    }
+
+    @Override
+    public List<PathMap> list( String fileSystem, String path, boolean recursive, int limit )
+    {
+        if ( recursive )
+        {
+            List<PathMap> ret = new ArrayList<>();
+            traverse( fileSystem, path, pathMap -> ret.add( pathMap ), limit );
+            return ret;
+        }
+        else
+        {
+            String parentPath = PathMapUtils.normalizeParentPath( path );
+            Result<DtxPathMap> ret = boundAndRunListQuery( fileSystem, parentPath );
+            return new ArrayList<>( ret.all() );
+        }
+    }
+
+    private Result<DtxPathMap> boundAndRunListQuery( String fileSystem, String parentPath )
+    {
         BoundStatement bound = preparedListQuery.bind( fileSystem, parentPath );
         ResultSet result = session.execute( bound );
-        Result<DtxPathMap> ret = pathMapMapper.map( result );
-        return new ArrayList<>( ret.all() );
+        return pathMapMapper.map( result );
+    }
+
+    private final static DtxPathMap FAKE_ROOT_OBJ = new DtxPathMap(); // if path is ROOT_DIR, use a FAKE_ROOT_OBJ
+
+    // To avoid listing huge file system and OOM we throw exception when the results exceeds limit
+    private void traverse( String fileSystem, String path, Consumer<PathMap> consumer, int limit )
+    {
+        logger.debug( "Traverse fileSystem: {}, path: {}", fileSystem, path );
+
+        DtxPathMap root;
+        if ( ROOT_DIR.equals( path ) )
+        {
+            root = FAKE_ROOT_OBJ;
+        }
+        else
+        {
+            if ( !path.endsWith( "/" ) )
+            {
+                path += "/";
+            }
+            String parentPath = PathMapUtils.getParentPath( path );
+            String filename = PathMapUtils.getFilename( path );
+            root = pathMapMapper.get( fileSystem, parentPath, filename );
+            if ( root == null )
+            {
+                logger.debug( "Root not found, fileSystem: {}, parentPath: {}, filename: {}", fileSystem, parentPath, filename );
+                return;
+            }
+        }
+
+        TreeTraverser<PathMap> traverser = new TreeTraverser<PathMap>()
+        {
+            @Override
+            public Iterable<PathMap> children( PathMap cur )
+            {
+                String parentPath;
+                if ( cur == FAKE_ROOT_OBJ )
+                {
+                    parentPath = ROOT_DIR;
+                }
+                else
+                {
+                    parentPath = Paths.get( cur.getParentPath(), cur.getFilename() ).toString();
+                }
+                Result<DtxPathMap> ret = boundAndRunListQuery( fileSystem, parentPath );
+                return new ArrayList<>( ret.all() );
+            }
+        };
+        AtomicInteger count = new AtomicInteger( 0 );
+        traverser.preOrderTraversal( root ).forEach( dtxPathMap -> {
+            if ( limit > 0 && count.incrementAndGet() > limit )
+            {
+                throw new RuntimeException( "Exceeds results limit " + limit );
+            }
+            if ( dtxPathMap != root )
+            {
+                consumer.accept( dtxPathMap );
+            }
+        } );
     }
 
     @Override
@@ -189,7 +267,7 @@ public class CassandraPathDB
     @Override
     public boolean exists( String fileSystem, String path )
     {
-        if ( PathMapUtils.ROOT_DIR.equals( path ) )
+        if ( ROOT_DIR.equals( path ) )
         {
             return true;
         }
@@ -419,7 +497,7 @@ public class CassandraPathDB
     {
         logger.debug( "Make dir, fileSystem: {}, path: {}", fileSystem, path );
 
-        if ( PathMapUtils.ROOT_DIR.equals( path ) )
+        if ( ROOT_DIR.equals( path ) )
         {
             return;
         }

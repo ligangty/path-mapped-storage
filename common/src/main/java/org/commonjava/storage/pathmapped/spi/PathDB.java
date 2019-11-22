@@ -10,6 +10,8 @@ public interface PathDB
 {
     List<PathMap> list( String fileSystem, String path );
 
+    List<PathMap> list( String fileSystem, String path, boolean recursive, int limit );
+
     long getFileLength( String fileSystem, String path );
 
     long getFileLastModified( String fileSystem, String path );
@@ -35,4 +37,5 @@ public interface PathDB
     default List<Reclaim> listOrphanedFiles() { return listOrphanedFiles( 0 ); }
 
     void removeFromReclaim( Reclaim reclaim );
+
 }

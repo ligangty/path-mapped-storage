@@ -37,6 +37,12 @@ public class MeasuredPathDB
     }
 
     @Override
+    public List<PathMap> list( String fileSystem, String path, boolean recursive, int limit )
+    {
+        return measure( () -> decorated.list( fileSystem, path, recursive, limit ), "listRecursively" );
+    }
+
+    @Override
     public long getFileLength( String fileSystem, String path )
     {
         return decorated.getFileLength( fileSystem, path );

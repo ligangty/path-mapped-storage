@@ -21,6 +21,7 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
+import static org.apache.commons.lang.StringUtils.isBlank;
 import static org.commonjava.storage.pathmapped.util.PathMapUtils.ROOT_DIR;
 
 public class PathMappedFileManager implements Closeable
@@ -92,22 +93,53 @@ public class PathMappedFileManager implements Closeable
     {
     }
 
-    // append '/' to directory names if not has
     public String[] list( String fileSystem, String path )
+    {
+        return list( fileSystem, path, false, 0 );
+    }
+
+    public String[] list( String fileSystem, String path, boolean recursive, int limit )
     {
         if ( path == null )
         {
             return new String[] {};
         }
-        List<PathMap> paths = pathDB.list( fileSystem, path );
-        return paths.stream().map( x -> {
-            String p = x.getFilename();
-            if ( x.getFileId() == null && !p.endsWith( "/" ) )
-            {
-                p += "/";
-            }
-            return p;
-        } ).toArray( String[]::new );
+        List<PathMap> paths;
+        if ( recursive )
+        {
+            paths = pathDB.list( fileSystem, path, true, limit );
+            return paths.stream().map( x -> {
+                String cutParentPath = cutParentPath( path, x.getParentPath() );
+                if ( isBlank( cutParentPath ) )
+                {
+                    return x.getFilename();
+                }
+                return cutParentPath + "/" + x.getFilename();
+            } ).toArray( String[]::new );
+        }
+        else
+        {
+            paths = pathDB.list( fileSystem, path );
+            return paths.stream().map( x -> x.getFilename() ).toArray( String[]::new );
+        }
+    }
+
+    /*
+     * Format listing result. e.g, if path=/foo, parentPath=/foo/bar/1, result will be bar/1
+     * The parentPath always has heading / so we make sure root has that too. /foo/1.0
+     */
+    private String cutParentPath( String rootPath, String parentPath )
+    {
+        if ( !rootPath.startsWith( "/" ) )
+        {
+            rootPath = "/" + rootPath;
+        }
+        String ret = parentPath.replaceFirst( rootPath, "" );
+        if ( ret.startsWith( "/" ) )
+        {
+            ret = ret.replaceFirst( "/", "" );
+        }
+        return ret;
     }
 
     public long getFileLength( String fileSystem, String path )

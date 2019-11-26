@@ -23,7 +23,7 @@ import java.io.IOException;
 import java.util.Arrays;
 import java.util.List;
 
-import static org.junit.Assert.fail;
+import static org.junit.Assert.assertEquals;
 
 public class ListingTest
         extends AbstractCassandraFMTest
@@ -134,15 +134,8 @@ public class ListingTest
             }
         }
 
-        // list /foo/bar with limit 1 and expect exception
-        try
-        {
-            fileManager.list( TEST_FS, "/foo/bar", true, 1 );
-            fail("should not reach here due to exceeding limit exception");
-        }
-        catch ( Exception e )
-        {
-            System.out.println("Expected exception: " + e.getMessage());
-        }
+        // list /foo/bar with limit 1
+        String[] ret = fileManager.list( TEST_FS, "/foo/bar", true, 1 );
+        assertEquals( ret.length, 1 );
     }
 }

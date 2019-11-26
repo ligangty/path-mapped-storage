@@ -31,6 +31,7 @@ import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
 
@@ -213,16 +214,33 @@ public class CassandraPathDB
             }
         };
         AtomicInteger count = new AtomicInteger( 0 );
-        traverser.preOrderTraversal( root ).forEach( dtxPathMap -> {
-            if ( limit > 0 && count.incrementAndGet() > limit )
+        AtomicBoolean reachResultSetLimit = new AtomicBoolean( false );
+        try
+        {
+            traverser.preOrderTraversal( root ).forEach( dtxPathMap -> {
+                if ( limit > 0 && count.get() >= limit )
+                {
+                    reachResultSetLimit.set( true );
+                    throw new RuntimeException(); // forEach does not have break
+                }
+                if ( dtxPathMap != root )
+                {
+                    consumer.accept( dtxPathMap );
+                    count.incrementAndGet();
+                }
+            } );
+        }
+        catch ( RuntimeException e )
+        {
+            if ( reachResultSetLimit.get() )
             {
-                throw new RuntimeException( "Exceeds results limit " + limit );
+                logger.info( "Reach result set limit " + limit );
             }
-            if ( dtxPathMap != root )
+            else
             {
-                consumer.accept( dtxPathMap );
+                throw e;
             }
-        } );
+        }
     }
 
     @Override

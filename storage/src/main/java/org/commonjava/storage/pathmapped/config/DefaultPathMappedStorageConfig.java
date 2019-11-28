@@ -11,7 +11,7 @@ public class DefaultPathMappedStorageConfig
 
     private final int DEFAULT_GC_GRACE_PERIOD_IN_HOURS = 24;
 
-    private final String DEFAULT_FILE_CHECKSUM_ALGORITHM = "MD5";
+    private final String DEFAULT_FILE_CHECKSUM_ALGORITHM = "SHA-256";
 
     private int gcGracePeriodInHours = DEFAULT_GC_GRACE_PERIOD_IN_HOURS;
 

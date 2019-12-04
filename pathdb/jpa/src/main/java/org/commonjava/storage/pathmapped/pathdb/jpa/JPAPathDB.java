@@ -25,9 +25,6 @@ import java.util.List;
 public class JPAPathDB
                 implements PathDB
 {
-    //TODO: checksum dedupe is not implemented yet in JPAPathDB, will implement it later. Can refer the way of
-    //      CassandraPathDB to do this.
-
     private final Logger logger = LoggerFactory.getLogger( getClass() );
 
     private final EntityManagerFactory factory;
@@ -40,7 +37,7 @@ public class JPAPathDB
         entitymanager = factory.createEntityManager();
     }
 
-    public List<PathMap> list( String fileSystem, String path )
+    public List<PathMap> list( String fileSystem, String path, FileType fileType )
     {
         if ( path.endsWith( "/" ) )
         {
@@ -57,9 +54,9 @@ public class JPAPathDB
     }
 
     @Override
-    public List<PathMap> list( String fileSystem, String path, boolean recursive, int limit )
+    public List<PathMap> list( String fileSystem, String path, boolean recursive, int limit, FileType fileType )
     {
-        return list( fileSystem, path );
+        return list( fileSystem, path, fileType );
     }
 
     @Override

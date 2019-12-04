@@ -34,8 +34,12 @@ import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
+import java.util.stream.Collectors;
 
 import static org.apache.commons.lang.StringUtils.isNotBlank;
+import static org.commonjava.storage.pathmapped.spi.PathDB.FileType.all;
+import static org.commonjava.storage.pathmapped.spi.PathDB.FileType.dir;
+import static org.commonjava.storage.pathmapped.spi.PathDB.FileType.file;
 import static org.commonjava.storage.pathmapped.util.PathMapUtils.ROOT_DIR;
 
 public class CassandraPathDB
@@ -138,25 +142,26 @@ public class CassandraPathDB
      * List files under specified path.
      */
     @Override
-    public List<PathMap> list( String fileSystem, String path )
+    public List<PathMap> list( String fileSystem, String path, FileType fileType )
     {
-        return list( fileSystem, path, false, 0 );
+        return list( fileSystem, path, false, 0, fileType );
     }
 
     @Override
-    public List<PathMap> list( String fileSystem, String path, boolean recursive, int limit )
+    public List<PathMap> list( String fileSystem, String path, boolean recursive, int limit, FileType fileType )
     {
         if ( recursive )
         {
             List<PathMap> ret = new ArrayList<>();
-            traverse( fileSystem, path, pathMap -> ret.add( pathMap ), limit );
+            traverse( fileSystem, path, pathMap -> ret.add( pathMap ), limit, fileType );
             return ret;
         }
         else
         {
             String parentPath = PathMapUtils.normalizeParentPath( path );
             Result<DtxPathMap> ret = boundAndRunListQuery( fileSystem, parentPath );
-            return new ArrayList<>( ret.all() );
+            return ret.all().stream().filter( dtxPathMap -> matchFileType( dtxPathMap, fileType ) )
+                          .collect( Collectors.toList() );
         }
     }
 
@@ -170,7 +175,7 @@ public class CassandraPathDB
     private final static DtxPathMap FAKE_ROOT_OBJ = new DtxPathMap(); // if path is ROOT_DIR, use a FAKE_ROOT_OBJ
 
     // To avoid listing huge file system and OOM we throw exception when the results exceeds limit
-    private void traverse( String fileSystem, String path, Consumer<PathMap> consumer, int limit )
+    private void traverse( String fileSystem, String path, Consumer<PathMap> consumer, int limit, FileType fileType )
     {
         logger.debug( "Traverse fileSystem: {}, path: {}", fileSystem, path );
 
@@ -223,7 +228,7 @@ public class CassandraPathDB
                     reachResultSetLimit.set( true );
                     throw new RuntimeException(); // forEach does not have break
                 }
-                if ( dtxPathMap != root )
+                if ( dtxPathMap != root && matchFileType( dtxPathMap, fileType ) )
                 {
                     consumer.accept( dtxPathMap );
                     count.incrementAndGet();
@@ -241,6 +246,13 @@ public class CassandraPathDB
                 throw e;
             }
         }
+    }
+
+    private boolean matchFileType( PathMap dtxPathMap, FileType fileType )
+    {
+        String filename = dtxPathMap.getFilename();
+        return fileType == null || fileType == all || fileType == dir && filename.endsWith( "/" )
+                        || fileType == file && !filename.endsWith( "/" );
     }
 
     @Override

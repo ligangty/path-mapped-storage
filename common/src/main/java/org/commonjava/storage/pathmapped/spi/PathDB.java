@@ -8,9 +8,13 @@ import java.util.List;
 
 public interface PathDB
 {
-    List<PathMap> list( String fileSystem, String path );
+    enum FileType {
+        all, file, dir;
+    };
 
-    List<PathMap> list( String fileSystem, String path, boolean recursive, int limit );
+    List<PathMap> list( String fileSystem, String path, FileType fileType );
+
+    List<PathMap> list( String fileSystem, String path, boolean recursive, int limit, FileType fileType );
 
     long getFileLength( String fileSystem, String path );
 

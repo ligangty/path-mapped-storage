@@ -15,6 +15,7 @@
  */
 package org.commonjava.storage.pathmapped;
 
+import org.commonjava.storage.pathmapped.spi.PathDB;
 import org.hamcrest.CoreMatchers;
 import org.junit.Assert;
 import org.junit.Test;
@@ -126,6 +127,7 @@ public class ListingTest
         // list /foo/bar
         lists = Arrays.asList( fileManager.list( TEST_FS, "/foo/bar", true, 0 ) );
         lists.forEach( s -> System.out.println( s ) );
+        assertEquals( lists.size(), 3 );
         for ( String path : paths )
         {
             if ( path.startsWith( "/foo/bar" ))
@@ -135,7 +137,23 @@ public class ListingTest
         }
 
         // list /foo/bar with limit 1
-        String[] ret = fileManager.list( TEST_FS, "/foo/bar", true, 1 );
-        assertEquals( ret.length, 1 );
+        lists = Arrays.asList( fileManager.list( TEST_FS, "/foo/bar", true, 1 ) );
+        assertEquals( lists.size(), 1 );
+
+        // list /foo/bar with fileType file
+        lists = Arrays.asList( fileManager.list( TEST_FS, "/foo/bar", true, 0, PathDB.FileType.file ) );
+        lists.forEach( s -> System.out.println( s ) );
+        assertEquals( lists.size(), 2 );
+        for ( String path : paths )
+        {
+            if ( path.startsWith( "/foo/bar" ))
+            {
+                Assert.assertThat( lists, CoreMatchers.hasItems( path.substring( "/foo/bar".length() + 1 ) ) ); // remove heading /foo/bar/
+            }
+        }
+
+        // list /foo/bar with fileType file and limit 1
+        lists = Arrays.asList( fileManager.list( TEST_FS, "/foo/bar", true, 1, PathDB.FileType.file ) );
+        assertEquals( lists.size(), 1 );
     }
 }

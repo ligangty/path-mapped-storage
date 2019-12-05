@@ -31,15 +31,15 @@ public class MeasuredPathDB
     }
 
     @Override
-    public List<PathMap> list( String fileSystem, String path )
+    public List<PathMap> list( String fileSystem, String path, FileType fileType )
     {
-        return measure( () -> decorated.list( fileSystem, path ), "list" );
+        return measure( () -> decorated.list( fileSystem, path, fileType ), "list" );
     }
 
     @Override
-    public List<PathMap> list( String fileSystem, String path, boolean recursive, int limit )
+    public List<PathMap> list( String fileSystem, String path, boolean recursive, int limit, FileType fileType )
     {
-        return measure( () -> decorated.list( fileSystem, path, recursive, limit ), "listRecursively" );
+        return measure( () -> decorated.list( fileSystem, path, recursive, limit, fileType ), "listRecursively" );
     }
 
     @Override

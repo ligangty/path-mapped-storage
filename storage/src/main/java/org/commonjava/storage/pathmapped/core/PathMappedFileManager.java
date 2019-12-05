@@ -95,10 +95,20 @@ public class PathMappedFileManager implements Closeable
 
     public String[] list( String fileSystem, String path )
     {
-        return list( fileSystem, path, false, 0 );
+        return list( fileSystem, path, PathDB.FileType.all );
     }
 
     public String[] list( String fileSystem, String path, boolean recursive, int limit )
+    {
+        return list( fileSystem, path, recursive, limit, PathDB.FileType.all );
+    }
+
+    public String[] list( String fileSystem, String path, PathDB.FileType fileType )
+    {
+        return list( fileSystem, path, false, 0, fileType );
+    }
+
+    public String[] list( String fileSystem, String path, boolean recursive, int limit, PathDB.FileType fileType )
     {
         if ( path == null )
         {
@@ -107,7 +117,7 @@ public class PathMappedFileManager implements Closeable
         List<PathMap> paths;
         if ( recursive )
         {
-            paths = pathDB.list( fileSystem, path, true, limit );
+            paths = pathDB.list( fileSystem, path, true, limit, fileType );
             return paths.stream().map( x -> {
                 String cutParentPath = cutParentPath( path, x.getParentPath() );
                 if ( isBlank( cutParentPath ) )
@@ -119,7 +129,7 @@ public class PathMappedFileManager implements Closeable
         }
         else
         {
-            paths = pathDB.list( fileSystem, path );
+            paths = pathDB.list( fileSystem, path, fileType );
             return paths.stream().map( x -> x.getFilename() ).toArray( String[]::new );
         }
     }

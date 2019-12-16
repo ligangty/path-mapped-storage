@@ -21,12 +21,12 @@
     <parent>
         <groupId>org.commonjava</groupId>
         <artifactId>commonjava</artifactId>
-        <version>16</version>
+        <version>20-SNAPSHOT</version>
     </parent>
 
     <groupId>org.commonjava.util</groupId>
     <artifactId>path-mapped</artifactId>
-    <version>1.1-SNAPSHOT</version>
+    <version>2.0-SNAPSHOT</version>
 
     <packaging>pom</packaging>
     <modules>
@@ -50,7 +50,7 @@
     <properties>
         <projectOwner>Red Hat, Inc.</projectOwner>
         <projectEmail>nos-devel@redhat.com</projectEmail>
-        <javaVersion>1.8</javaVersion>
+        <javaVersion>11</javaVersion>
         <test-forkCount>1</test-forkCount>
         <datastaxVersion>3.7.2</datastaxVersion>
         <cassandraUnitVersion>3.7.1.0</cassandraUnitVersion>
@@ -64,27 +64,27 @@
             <dependency>
                 <groupId>org.commonjava.util</groupId>
                 <artifactId>path-mapped-common</artifactId>
-                <version>1.1-SNAPSHOT</version>
+                <version>2.0-SNAPSHOT</version>
             </dependency>
             <dependency>
                 <groupId>org.commonjava.util</groupId>
                 <artifactId>path-mapped-storage</artifactId>
-                <version>1.1-SNAPSHOT</version>
+                <version>2.0-SNAPSHOT</version>
             </dependency>
             <dependency>
                 <groupId>org.commonjava.util</groupId>
                 <artifactId>path-mapped-pathdb</artifactId>
-                <version>1.1-SNAPSHOT</version>
+                <version>2.0-SNAPSHOT</version>
             </dependency>
             <dependency>
                 <groupId>org.commonjava.util</groupId>
                 <artifactId>path-mapped-pathdb-datastax</artifactId>
-                <version>1.1-SNAPSHOT</version>
+                <version>2.0-SNAPSHOT</version>
             </dependency>
             <dependency>
                 <groupId>org.commonjava.util</groupId>
                 <artifactId>path-mapped-pathdb-jpa</artifactId>
-                <version>1.1-SNAPSHOT</version>
+                <version>2.0-SNAPSHOT</version>
             </dependency>
 
             <dependency>

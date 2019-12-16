@@ -21,7 +21,7 @@
     <parent>
         <groupId>org.commonjava</groupId>
         <artifactId>commonjava</artifactId>
-        <version>16</version>
+        <version>18</version>
     </parent>
 
     <groupId>org.commonjava.util</groupId>
@@ -50,7 +50,7 @@
     <properties>
         <projectOwner>Red Hat, Inc.</projectOwner>
         <projectEmail>nos-devel@redhat.com</projectEmail>
-        <javaVersion>1.8</javaVersion>
+        <javaVersion>11</javaVersion>
         <test-forkCount>1</test-forkCount>
         <datastaxVersion>3.7.2</datastaxVersion>
         <cassandraUnitVersion>3.11.2.0</cassandraUnitVersion>

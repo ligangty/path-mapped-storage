@@ -171,6 +171,7 @@ public class DtxPathMap implements PathMap
     {
         return "DtxPathMap{" + "fileSystem='" + fileSystem + '\'' + ", parentPath='" + parentPath + '\''
                         + ", filename='" + filename + '\'' + ", fileId='" + fileId + '\'' + ", creation=" + creation
-                        + ", size=" + size + ", fileStorage='" + fileStorage + '\'' + '}';
+                        + ", size=" + size + ", fileStorage='" + fileStorage + '\'' + ", checksum='" + checksum + '\''
+                        + '}';
     }
 }

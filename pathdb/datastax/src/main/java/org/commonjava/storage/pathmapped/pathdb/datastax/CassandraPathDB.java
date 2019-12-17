@@ -397,6 +397,8 @@ public class CassandraPathDB
 
         // insert reverse mapping
         addToReverseMap( pathMap.getFileId(), PathMapUtils.marshall( fileSystem, path ) );
+
+        logger.debug( "Insert finished: {}", pathMap.getFilename() );
     }
 
     /**

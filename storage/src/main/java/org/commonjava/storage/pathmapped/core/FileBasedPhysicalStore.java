@@ -106,4 +106,13 @@ public class FileBasedPhysicalStore implements PhysicalStore
         return true;
     }
 
+    @Override
+    public boolean exists( String storageFile )
+    {
+        if ( storageFile == null )
+        {
+            return false;
+        }
+        return new File( baseDir, storageFile ).exists();
+    }
 }

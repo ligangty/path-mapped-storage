@@ -27,5 +27,7 @@ public interface PhysicalStore
 
     InputStream getInputStream( String storageFile ) throws IOException;
 
+    boolean exists( String storageFile );
+
     boolean delete( FileInfo fileInfo );
 }

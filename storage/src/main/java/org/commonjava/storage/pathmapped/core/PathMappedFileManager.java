@@ -15,10 +15,11 @@
  */
 package org.commonjava.storage.pathmapped.core;
 
+import org.apache.commons.lang.StringUtils;
 import org.commonjava.storage.pathmapped.config.PathMappedStorageConfig;
-import org.commonjava.storage.pathmapped.spi.FileInfo;
 import org.commonjava.storage.pathmapped.model.PathMap;
 import org.commonjava.storage.pathmapped.model.Reclaim;
+import org.commonjava.storage.pathmapped.spi.FileInfo;
 import org.commonjava.storage.pathmapped.spi.PathDB;
 import org.commonjava.storage.pathmapped.spi.PhysicalStore;
 import org.slf4j.Logger;
@@ -71,9 +72,16 @@ public class PathMappedFileManager implements Closeable
         String storageFile = pathDB.getStorageFile( fileSystem, path );
         if ( storageFile == null )
         {
-            throw new IOException( "Could not open input stream to for path {}-{}: path-mapped physical file does not exist." );
+            throw new IOException(
+                    "Could not open input stream to for path {}-{}: path-mapped physical file does not exist." );
         }
-        return physicalStore.getInputStream( storageFile );
+        final InputStream stream = physicalStore.getInputStream( storageFile );
+        if ( stream == null )
+        {
+            throw new IOException(
+                    "Could not open input stream to for path {}-{}: path-mapped physical file does not exist or the path is a directory." );
+        }
+        return stream;
     }
 
     public OutputStream openOutputStream( String fileSystem, String path ) throws IOException
@@ -187,11 +195,21 @@ public class PathMappedFileManager implements Closeable
 
     public boolean exists( String fileSystem, String path )
     {
-        if ( path == null )
+        // NOS-2289 After checking the database, I found that there are some mismatch between database entries
+        //          and physical store files. There are entries in database, but the corresponding physical files
+        //          missed in physical location. So I think we need to check real existence of from physical level
+        //          but not just from db level to make sure if it really exists.
+        if ( StringUtils.isBlank( path ) )
         {
+            logger.warn( "Checking existence of an empty path for file system {}, which is considered as not existed", fileSystem );
             return false;
         }
-        return pathDB.exists( fileSystem, path );
+        if ( isDirectory( fileSystem, path ) )
+        {
+            return pathDB.exists( fileSystem, path );
+        }
+        final String storageFile = pathDB.getStorageFile( fileSystem, path );
+        return physicalStore.exists( storageFile );
     }
 
     public boolean isDirectory( String fileSystem, String path )

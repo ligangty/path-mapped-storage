@@ -28,11 +28,6 @@ import java.nio.file.Paths;
 import java.util.HashSet;
 import java.util.Set;
 
-import static org.hamcrest.CoreMatchers.equalTo;
-import static org.hamcrest.CoreMatchers.not;
-import static org.hamcrest.CoreMatchers.notNullValue;
-import static org.hamcrest.CoreMatchers.nullValue;
-import static org.junit.Assert.assertThat;
 import static org.junit.Assert.fail;
 
 public class ChecksumDedupeTest
@@ -165,7 +160,6 @@ public class ChecksumDedupeTest
 
     private void checkRead( final String fileSys, final String path, final boolean exists,
                             final String expected )
-            throws IOException
     {
         try (InputStream is = fileManager.openInputStream( fileSys, path ))
         {
@@ -177,6 +171,13 @@ public class ChecksumDedupeTest
             else
             {
                 Assert.assertThat( is, CoreMatchers.nullValue() );
+            }
+        }
+        catch ( IOException e )
+        {
+            if ( exists || expected != null )
+            {
+                fail( "An existed file path can not be opened to read successfully!" );
             }
         }
     }

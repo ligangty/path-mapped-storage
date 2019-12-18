@@ -34,6 +34,7 @@ import java.util.Map;
 import java.util.Random;
 
 import static java.lang.Thread.sleep;
+import static org.junit.Assert.fail;
 
 public class SimpleIOTest
         extends AbstractCassandraFMTest
@@ -194,23 +195,29 @@ public class SimpleIOTest
     public void delete()
             throws IOException
     {
-        try (InputStream is = fileManager.openInputStream( TEST_FS, path1 ))
-        {
-            Assert.assertThat( is, CoreMatchers.nullValue() );
-        }
+        assertNonExistsOpen( TEST_FS, path1 );
         writeWithContent( fileManager.openOutputStream( TEST_FS, path1 ), simpleContent );
         try (InputStream is = fileManager.openInputStream( TEST_FS, path1 ))
         {
             Assert.assertThat( is, CoreMatchers.notNullValue() );
         }
         Assert.assertThat( fileManager.delete( TEST_FS, path1 ), CoreMatchers.equalTo( true ) );
-        try (InputStream is = fileManager.openInputStream( TEST_FS, path1 ))
-        {
-            Assert.assertThat( is, CoreMatchers.nullValue() );
-        }
+        assertNonExistsOpen( TEST_FS, path1 );
         //NOTE: not allow to delete a folder
         Assert.assertThat( fileManager.delete( TEST_FS, pathSub1 + "/" ), CoreMatchers.equalTo( false ) );
         assertPathWithChecker( ( f, p ) -> fileManager.exists( f, p ), TEST_FS, pathSub1, true );
+    }
+
+    private void assertNonExistsOpen( final String fileSystem, final String path){
+        try
+        {
+            fileManager.openInputStream( fileSystem, path );
+            fail("Should not open this stream correctly!");
+        }
+        catch ( IOException e )
+        {
+            // correct case here
+        }
     }
 
     @Test

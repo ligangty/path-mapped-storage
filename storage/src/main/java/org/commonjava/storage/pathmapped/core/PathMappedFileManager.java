@@ -71,6 +71,7 @@ public class PathMappedFileManager implements Closeable
         String storageFile = pathDB.getStorageFile( fileSystem, path );
         if ( storageFile == null )
         {
+            logger.warn( "The physical for {}-{} does not exists", fileSystem, path );
             return null;
         }
         return physicalStore.getInputStream( storageFile );

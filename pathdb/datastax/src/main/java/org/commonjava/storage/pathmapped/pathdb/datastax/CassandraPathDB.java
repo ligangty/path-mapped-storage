@@ -312,6 +312,7 @@ public class CassandraPathDB
     @Override
     public boolean exists( String fileSystem, String path )
     {
+        logger.trace( "Check if exists for {}-{}", fileSystem, path );
         if ( ROOT_DIR.equals( path ) )
         {
             return true;
@@ -330,7 +331,9 @@ public class CassandraPathDB
         }
         ResultSet result = session.execute( bound );
         long count = result.one().get( 0, Long.class );
-        return count > 0;
+        boolean exists = count > 0;
+        logger.trace( "{}-{} exists in path db: {}", fileSystem, path, exists );
+        return exists;
     }
 
     @Override

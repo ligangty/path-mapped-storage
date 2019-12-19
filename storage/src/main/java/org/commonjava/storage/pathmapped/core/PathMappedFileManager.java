@@ -72,14 +72,14 @@ public class PathMappedFileManager implements Closeable
         String storageFile = pathDB.getStorageFile( fileSystem, path );
         if ( storageFile == null )
         {
-            throw new IOException(
-                    "Could not open input stream to for path {}-{}: path-mapped physical file does not exist." );
+            throw new IOException( String.format(
+                    "Could not open input stream to for path %s - %s: path-mapped physical file does not exist.", fileSystem, path) );
         }
         final InputStream stream = physicalStore.getInputStream( storageFile );
         if ( stream == null )
         {
-            throw new IOException(
-                    "Could not open input stream to for path {}-{}: path-mapped physical file does not exist or the path is a directory." );
+            throw new IOException( String.format
+                    ("Could not open input stream to for path %s - %s: path-mapped physical file does not exist or the path is a directory.", fileSystem, path) );
         }
         return stream;
     }

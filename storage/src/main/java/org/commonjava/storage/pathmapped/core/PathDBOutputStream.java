@@ -26,6 +26,8 @@ import java.io.OutputStream;
 import java.security.NoSuchAlgorithmException;
 import java.util.Date;
 
+import static java.util.Objects.isNull;
+
 public class PathDBOutputStream
                 extends FilterOutputStream
 {
@@ -44,6 +46,8 @@ public class PathDBOutputStream
     private final String fileStorage;
 
     private long size;
+
+    private Exception error;
 
     private final ChecksumCalculator checksumCalculator;
 
@@ -77,6 +81,7 @@ public class PathDBOutputStream
         {
             // the generated physical file should be deleted immediately
             physicalStore.delete( fileInfo );
+            error = e;
             throw e;
         }
     }
@@ -85,6 +90,9 @@ public class PathDBOutputStream
     public void close() throws IOException
     {
         super.close();
-        pathDB.insert( fileSystem, path, new Date(), fileId, size, fileStorage, checksumCalculator.getDigestHex() );
+        if ( isNull( error ) )
+        {
+            pathDB.insert( fileSystem, path, new Date(), fileId, size, fileStorage, checksumCalculator.getDigestHex() );
+        }
     }
 }

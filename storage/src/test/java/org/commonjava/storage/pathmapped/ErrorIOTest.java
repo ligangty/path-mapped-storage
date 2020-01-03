@@ -33,6 +33,8 @@ public class ErrorIOTest
 
     private final String errPath = "io/err.out";
 
+    private final String nullPath = "io/null.out";
+
     @Test
     public void writeFileError() throws Exception
     {
@@ -53,6 +55,27 @@ public class ErrorIOTest
         catch ( IOException ex )
         {
             //java.io.IOException: Could not open input stream to for path test - io/err.out: path-mapped physical file does not exist.
+            System.out.println( ex );
+        }
+    }
+
+    @Test
+    public void writeNothing() throws Exception
+    {
+        try (OutputStream os = fileManager.openOutputStream( TEST_FS, nullPath ))
+        {
+        }
+
+        try
+        {
+            try (InputStream is = fileManager.openInputStream( TEST_FS, nullPath ))
+            {
+            }
+            fail();
+        }
+        catch ( IOException ex )
+        {
+            //java.io.IOException: Could not open input stream to for path test - io/null.out: path-mapped physical file does not exist.
             System.out.println( ex );
         }
     }

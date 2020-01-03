@@ -90,7 +90,7 @@ public class PathDBOutputStream
     public void close() throws IOException
     {
         super.close();
-        if ( isNull( error ) )
+        if ( isNull( error ) && size > 0 )
         {
             pathDB.insert( fileSystem, path, new Date(), fileId, size, fileStorage, checksumCalculator.getDigestHex() );
         }

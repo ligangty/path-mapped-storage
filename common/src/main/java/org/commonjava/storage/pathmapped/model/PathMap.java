@@ -33,5 +33,7 @@ public interface PathMap
 
     Date getCreation();
 
+    Date getExpiration();
+
     String getChecksum();
 }

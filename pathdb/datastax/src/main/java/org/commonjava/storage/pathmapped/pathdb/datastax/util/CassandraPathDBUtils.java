@@ -41,6 +41,7 @@ public class CassandraPathDBUtils
                         + "filename varchar,"
                         + "fileid varchar,"
                         + "creation timestamp,"
+                        + "expiration timestamp,"
                         + "size bigint,"
                         + "filestorage varchar,"
                         + "checksum varchar,"

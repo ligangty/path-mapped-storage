@@ -76,10 +76,10 @@ public class MeasuredPathDB
     }
 
     @Override
-    public void insert( String fileSystem, String path, Date date, String fileId, long size, String fileStorage,
+    public void insert( String fileSystem, String path, Date creation, Date expiration, String fileId, long size, String fileStorage,
                         String checksum )
     {
-        measure( () -> decorated.insert( fileSystem, path, date, fileId, size, fileStorage, checksum ), "insert" );
+        measure( () -> decorated.insert( fileSystem, path, creation, expiration, fileId, size, fileStorage, checksum ), "insert" );
     }
 
     @Override

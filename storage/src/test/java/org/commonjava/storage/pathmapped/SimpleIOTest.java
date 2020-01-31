@@ -32,9 +32,11 @@ import java.nio.file.Paths;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
+import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 
 import static java.lang.Thread.sleep;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.fail;
 
 public class SimpleIOTest
@@ -63,7 +65,7 @@ public class SimpleIOTest
     @Test
     public void readExpiredFileTest() throws Exception
     {
-        String path = "/file/to/be/expired";
+        String path = "/file/to/be/expired/" + UUID.randomUUID().toString();
         try (OutputStream os = fileManager.openOutputStream( TEST_FS, path, 500, TimeUnit.MILLISECONDS ))
         {
             Assert.assertNotNull( os );
@@ -81,6 +83,21 @@ public class SimpleIOTest
         {
             // expected
         }
+    }
+
+    @Test
+    public void notExistExpiredFileTest() throws Exception
+    {
+        String path = "/file/to/be/expired/" + UUID.randomUUID().toString();
+        try (OutputStream os = fileManager.openOutputStream( TEST_FS, path, 500, TimeUnit.MILLISECONDS ))
+        {
+            Assert.assertNotNull( os );
+            IOUtils.write( simpleContent.getBytes(), os );
+        }
+
+        sleep( 1000 );
+
+        assertFalse( fileManager.exists( TEST_FS, path ) );
     }
 
     @Test

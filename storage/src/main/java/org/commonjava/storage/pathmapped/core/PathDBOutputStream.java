@@ -92,7 +92,7 @@ public class PathDBOutputStream
     public void close() throws IOException
     {
         super.close();
-        if ( isNull( error ) && size > 0 )
+        if ( isNull( error ) )
         {
             Date creation = new Date();
             Date expiration = null;

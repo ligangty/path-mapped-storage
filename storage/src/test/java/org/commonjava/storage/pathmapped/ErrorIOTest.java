@@ -66,17 +66,8 @@ public class ErrorIOTest
         {
         }
 
-        try
+        try (InputStream is = fileManager.openInputStream( TEST_FS, nullPath ))
         {
-            try (InputStream is = fileManager.openInputStream( TEST_FS, nullPath ))
-            {
-            }
-            fail();
-        }
-        catch ( IOException ex )
-        {
-            //java.io.IOException: Could not open input stream to for path test - io/null.out: path-mapped physical file does not exist.
-            System.out.println( ex );
         }
     }
 

@@ -51,9 +51,10 @@ public class PathDBOutputStream
 
     private final ChecksumCalculator checksumCalculator;
 
+    private final long timeoutInMilliseconds;
 
     PathDBOutputStream( PathDB pathDB, PhysicalStore physicalStore, String fileSystem, String path, FileInfo fileInfo,
-                        OutputStream out, String checksumAlgorithm )
+                        OutputStream out, String checksumAlgorithm, long timeoutInMilliseconds )
             throws NoSuchAlgorithmException
     {
         super( out );
@@ -65,6 +66,7 @@ public class PathDBOutputStream
         this.fileId = fileInfo.getFileId();
         this.fileStorage = fileInfo.getFileStorage();
         this.checksumCalculator = new ChecksumCalculator( checksumAlgorithm );
+        this.timeoutInMilliseconds = timeoutInMilliseconds;
     }
 
     @Override
@@ -90,9 +92,16 @@ public class PathDBOutputStream
     public void close() throws IOException
     {
         super.close();
-        if ( isNull( error ) && size > 0 )
+        if ( isNull( error ) )
         {
-            pathDB.insert( fileSystem, path, new Date(), fileId, size, fileStorage, checksumCalculator.getDigestHex() );
+            Date creation = new Date();
+            Date expiration = null;
+            if ( timeoutInMilliseconds > 0 )
+            {
+                expiration = new Date( creation.getTime() + timeoutInMilliseconds );
+            }
+            pathDB.insert( fileSystem, path, creation, expiration, fileId, size, fileStorage,
+                           checksumCalculator.getDigestHex() );
         }
     }
 }

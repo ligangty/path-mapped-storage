@@ -49,6 +49,7 @@ import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import static org.apache.commons.lang.StringUtils.isNotBlank;
@@ -288,7 +289,7 @@ public class CassandraPathDB
 
         if ( parentPath == null || filename == null )
         {
-            logger.debug( "getPathMap::null, parentPath:{}, filename:{}", parentPath, filename );
+            logger.debug( "getPathMap, fileSystem:{}, parentPath:{}, filename:{}", fileSystem, parentPath, filename );
             return null;
         }
         return pathMapMapper.get( fileSystem, parentPath, filename );
@@ -337,7 +338,8 @@ public class CassandraPathDB
     }
 
     @Override
-    public void insert( String fileSystem, String path, Date date, String fileId, long size, String fileStorage, String checksum )
+    public void insert( String fileSystem, String path, Date creation, Date expiration, String fileId, long size,
+                        String fileStorage, String checksum )
     {
         DtxPathMap pathMap = new DtxPathMap();
         pathMap.setFileSystem( fileSystem );
@@ -345,7 +347,8 @@ public class CassandraPathDB
         String filename = PathMapUtils.getFilename( path );
         pathMap.setParentPath( parentPath );
         pathMap.setFilename( filename );
-        pathMap.setCreation( date );
+        pathMap.setCreation( creation );
+        pathMap.setExpiration( expiration );
         pathMap.setFileId( fileId );
         pathMap.setFileStorage( fileStorage );
         pathMap.setSize( size );
@@ -370,9 +373,6 @@ public class CassandraPathDB
             delete( fileSystem, path );
         }
 
-        //TODO: This checksum null checking is used to add a workaround for storage migration. We are judging if
-        //      this checksum entry is needed for existed legacy storage files, so if not needed, null can be passed
-        //      in to skip the checksum de-dupe process.
         if ( isNotBlank( checksum ) )
         {
             final FileChecksum existedChecksum = fileChecksumMapper.get( checksum );
@@ -506,9 +506,21 @@ public class CassandraPathDB
         PathMap pathMap = getPathMap( fileSystem, path );
         if ( pathMap != null )
         {
-            return pathMap.getFileStorage();
+            return checkExpirationAnd( fileSystem, path, pathMap, ( t ) -> t.getFileStorage() );
         }
         return null;
+    }
+
+    private <R> R checkExpirationAnd( String fileSystem, String path, PathMap pathMap, Function<PathMap, R> function )
+    {
+        Date expiration = pathMap.getExpiration();
+        if ( expiration != null && expiration.getTime() < System.currentTimeMillis() )
+        {
+            logger.debug( "File expired, fileSystem: {}, path: {}, expiration: {}", fileSystem, path, expiration );
+            delete( fileSystem, path );
+            return null;
+        }
+        return function.apply( pathMap );
     }
 
     @Override
@@ -538,7 +550,8 @@ public class CassandraPathDB
 
         String toFilename = PathMapUtils.getFilename( toPath );
         pathMapMapper.save( new DtxPathMap( toFileSystem, toParentPath, toFilename, pathMap.getFileId(),
-                                            pathMap.getCreation(), pathMap.getSize(), pathMap.getFileStorage(), pathMap.getChecksum() ) );
+                                            pathMap.getCreation(), pathMap.getExpiration(), pathMap.getSize(),
+                                            pathMap.getFileStorage(), pathMap.getChecksum() ) );
         return true;
     }
 

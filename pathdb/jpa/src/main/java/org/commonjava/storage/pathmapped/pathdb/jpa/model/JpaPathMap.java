@@ -38,6 +38,9 @@ public class JpaPathMap implements PathMap
     private Date creation;
 
     @Column
+    private Date expiration;
+
+    @Column
     private long size;
 
     @Column( name = "filestorage" )
@@ -50,11 +53,12 @@ public class JpaPathMap implements PathMap
     {
     }
 
-    public JpaPathMap( JpaPathKey pathKey, String fileId, Date creation, long size, String fileStorage, String checksum )
+    public JpaPathMap( JpaPathKey pathKey, String fileId, Date creation, Date expiration, long size, String fileStorage, String checksum )
     {
         this.pathKey = pathKey;
         this.fileId = fileId;
         this.creation = creation;
+        this.expiration = expiration;
         this.size = size;
         this.fileStorage = fileStorage;
         this.checksum = checksum;
@@ -88,6 +92,7 @@ public class JpaPathMap implements PathMap
         return pathKey.getFilename();
     }
 
+    @Override
     public String getFileId()
     {
         return fileId;
@@ -98,6 +103,7 @@ public class JpaPathMap implements PathMap
         this.fileId = fileId;
     }
 
+    @Override
     public long getSize()
     {
         return size;
@@ -108,6 +114,7 @@ public class JpaPathMap implements PathMap
         this.size = size;
     }
 
+    @Override
     public String getFileStorage()
     {
         return fileStorage;
@@ -118,6 +125,7 @@ public class JpaPathMap implements PathMap
         this.fileStorage = fileStorage;
     }
 
+    @Override
     public Date getCreation()
     {
         return creation;
@@ -126,6 +134,17 @@ public class JpaPathMap implements PathMap
     public void setCreation( Date creation )
     {
         this.creation = creation;
+    }
+
+    @Override
+    public Date getExpiration()
+    {
+        return expiration;
+    }
+
+    public void setExpiration( Date expiration )
+    {
+        this.expiration = expiration;
     }
 
     @Override
@@ -159,7 +178,8 @@ public class JpaPathMap implements PathMap
     @Override
     public String toString()
     {
-        return "PathMap{" + "pathKey=" + pathKey + ", fileId='" + fileId + '\'' + ", creation=" + creation + ", size="
-                        + size + ", fileStorage='" + fileStorage + '\'' + '}';
+        return "JpaPathMap{" + "pathKey=" + pathKey + ", fileId='" + fileId + '\'' + ", creation=" + creation
+                        + ", expiration=" + expiration + ", size=" + size + ", fileStorage='" + fileStorage + '\''
+                        + ", checksum='" + checksum + '\'' + '}';
     }
 }

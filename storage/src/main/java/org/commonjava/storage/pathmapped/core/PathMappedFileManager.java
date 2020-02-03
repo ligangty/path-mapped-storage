@@ -93,12 +93,19 @@ public class PathMappedFileManager implements Closeable
 
     public OutputStream openOutputStream( String fileSystem, String path ) throws IOException
     {
+        return openOutputStream( fileSystem, path, 0, TimeUnit.SECONDS ); // 0 is never timeout
+    }
+
+    public OutputStream openOutputStream( String fileSystem, String path, long timeout, TimeUnit timeoutUnit )
+                    throws IOException
+    {
         FileInfo fileInfo = physicalStore.getFileInfo( fileSystem, path );
         try
         {
             return new PathDBOutputStream( pathDB, physicalStore, fileSystem, path, fileInfo,
                                            physicalStore.getOutputStream( fileInfo ),
-                                           config.getFileChecksumAlgorithm() );
+                                           config.getFileChecksumAlgorithm(),
+                                           timeoutUnit.toMillis( timeout ));
         }
         catch ( NoSuchAlgorithmException e )
         {

@@ -43,6 +43,9 @@ public class DtxPathMap implements PathMap
     private Date creation;
 
     @Column
+    private Date expiration;
+
+    @Column
     private long size;
 
     @Column
@@ -55,18 +58,21 @@ public class DtxPathMap implements PathMap
     {
     }
 
-    public DtxPathMap( String fileSystem, String parentPath, String filename, String fileId, Date creation, long size, String fileStorage, String checksum )
+    public DtxPathMap( String fileSystem, String parentPath, String filename, String fileId, Date creation,
+                       Date expiration, long size, String fileStorage, String checksum )
     {
         this.fileSystem = fileSystem;
         this.parentPath = parentPath;
         this.filename = filename;
         this.fileId = fileId;
         this.creation = creation;
+        this.expiration = expiration;
         this.size = size;
         this.fileStorage = fileStorage;
         this.checksum = checksum;
     }
 
+    @Override
     public String getFileId()
     {
         return fileId;
@@ -77,6 +83,7 @@ public class DtxPathMap implements PathMap
         this.fileId = fileId;
     }
 
+    @Override
     public long getSize()
     {
         return size;
@@ -87,6 +94,7 @@ public class DtxPathMap implements PathMap
         this.size = size;
     }
 
+    @Override
     public String getFileStorage()
     {
         return fileStorage;
@@ -97,6 +105,7 @@ public class DtxPathMap implements PathMap
         this.fileStorage = fileStorage;
     }
 
+    @Override
     public Date getCreation()
     {
         return creation;
@@ -107,6 +116,18 @@ public class DtxPathMap implements PathMap
         this.creation = creation;
     }
 
+    @Override
+    public Date getExpiration()
+    {
+        return expiration;
+    }
+
+    public void setExpiration( Date expiration )
+    {
+        this.expiration = expiration;
+    }
+
+    @Override
     public String getFileSystem()
     {
         return fileSystem;
@@ -117,6 +138,7 @@ public class DtxPathMap implements PathMap
         this.fileSystem = fileSystem;
     }
 
+    @Override
     public String getParentPath()
     {
         return parentPath;
@@ -127,6 +149,7 @@ public class DtxPathMap implements PathMap
         this.parentPath = parentPath;
     }
 
+    @Override
     public String getFilename()
     {
         return filename;
@@ -171,7 +194,7 @@ public class DtxPathMap implements PathMap
     {
         return "DtxPathMap{" + "fileSystem='" + fileSystem + '\'' + ", parentPath='" + parentPath + '\''
                         + ", filename='" + filename + '\'' + ", fileId='" + fileId + '\'' + ", creation=" + creation
-                        + ", size=" + size + ", fileStorage='" + fileStorage + '\'' + ", checksum='" + checksum + '\''
-                        + '}';
+                        + ", expiration=" + expiration + ", size=" + size + ", fileStorage='" + fileStorage + '\''
+                        + ", checksum='" + checksum + '\'' + '}';
     }
 }

@@ -113,12 +113,13 @@ public class JPAPathDB
     }
 
     @Override
-    public void insert( String fileSystem, String path, Date date, String fileId, long size, String fileStorage, String checksum )
+    public void insert( String fileSystem, String path, Date creation, Date expiration, String fileId, long size, String fileStorage, String checksum )
     {
         JpaPathMap pathMap = new JpaPathMap();
         JpaPathKey pathKey = getPathKey( fileSystem, path );
         pathMap.setPathKey( pathKey );
-        pathMap.setCreation( date );
+        pathMap.setCreation( creation );
+        pathMap.setExpiration( expiration );
         pathMap.setFileId( fileId );
         pathMap.setFileStorage( fileStorage );
         pathMap.setSize( size );
@@ -283,7 +284,7 @@ public class JPAPathDB
 
         //TODO: need to implement checksum de-dupe in future, and add checksum here
         transactionAnd( () -> {
-            entitymanager.persist( new JpaPathMap( to, pathMap.getFileId(), pathMap.getCreation(), pathMap.getSize(),
+            entitymanager.persist( new JpaPathMap( to, pathMap.getFileId(), pathMap.getCreation(), pathMap.getExpiration(), pathMap.getSize(),
                                                    pathMap.getFileStorage(), "" ) );
         } );
         return true;

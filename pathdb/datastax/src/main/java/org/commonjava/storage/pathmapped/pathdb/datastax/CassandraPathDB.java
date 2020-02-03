@@ -353,10 +353,10 @@ public class CassandraPathDB
         pathMap.setFileStorage( fileStorage );
         pathMap.setSize( size );
         pathMap.setChecksum( checksum );
-        insert( pathMap, checksum );
+        insert( pathMap );
     }
 
-    private void insert( PathMap pathMap, String checksum )
+    private void insert( PathMap pathMap )
     {
         logger.debug( "Insert: {}", pathMap );
 
@@ -372,6 +372,8 @@ public class CassandraPathDB
         {
             delete( fileSystem, path );
         }
+
+        String checksum = pathMap.getChecksum();
 
         if ( isNotBlank( checksum ) )
         {

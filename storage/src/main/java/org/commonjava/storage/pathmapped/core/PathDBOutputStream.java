@@ -27,6 +27,7 @@ import java.security.NoSuchAlgorithmException;
 import java.util.Date;
 
 import static java.util.Objects.isNull;
+import static org.apache.commons.lang.StringUtils.isNotBlank;
 
 public class PathDBOutputStream
                 extends FilterOutputStream
@@ -49,7 +50,7 @@ public class PathDBOutputStream
 
     private Exception error;
 
-    private final ChecksumCalculator checksumCalculator;
+    private ChecksumCalculator checksumCalculator;
 
     private final long timeoutInMilliseconds;
 
@@ -65,7 +66,10 @@ public class PathDBOutputStream
         this.fileInfo = fileInfo;
         this.fileId = fileInfo.getFileId();
         this.fileStorage = fileInfo.getFileStorage();
-        this.checksumCalculator = new ChecksumCalculator( checksumAlgorithm );
+        if ( isNotBlank( checksumAlgorithm ) && !checksumAlgorithm.equals( "NONE" ) )
+        {
+            this.checksumCalculator = new ChecksumCalculator( checksumAlgorithm );
+        }
         this.timeoutInMilliseconds = timeoutInMilliseconds;
     }
 
@@ -77,7 +81,10 @@ public class PathDBOutputStream
             super.write( b );
             size += 1;
             byte by = (byte) ( b & 0xff );
-            checksumCalculator.update( by );
+            if ( checksumCalculator != null )
+            {
+                checksumCalculator.update( by );
+            }
         }
         catch ( IOException e )
         {
@@ -100,8 +107,12 @@ public class PathDBOutputStream
             {
                 expiration = new Date( creation.getTime() + timeoutInMilliseconds );
             }
-            pathDB.insert( fileSystem, path, creation, expiration, fileId, size, fileStorage,
-                           checksumCalculator.getDigestHex() );
+            String checksum = null;
+            if ( checksumCalculator != null )
+            {
+                checksum = checksumCalculator.getDigestHex();
+            }
+            pathDB.insert( fileSystem, path, creation, expiration, fileId, size, fileStorage, checksum );
         }
     }
 }

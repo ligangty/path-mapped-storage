@@ -53,6 +53,8 @@ public class PathMappedFileManager implements Closeable
 
     private ScheduledExecutorService gcThreadPool;
 
+    private String deduplicatePattern;
+
     public PathMappedFileManager( PathMappedStorageConfig config, PathDB pathDB, PhysicalStore physicalStore )
     {
         this.pathDB = pathDB;
@@ -72,6 +74,8 @@ public class PathMappedFileManager implements Closeable
                 gc();
             }, initialDelay, gcIntervalInMinutes, TimeUnit.MINUTES );
         }
+
+        deduplicatePattern = config.getDeduplicatePattern();
     }
 
     public InputStream openInputStream( String fileSystem, String path ) throws IOException
@@ -100,11 +104,16 @@ public class PathMappedFileManager implements Closeable
                     throws IOException
     {
         FileInfo fileInfo = physicalStore.getFileInfo( fileSystem, path );
+        String checksumAlgorithm = null;
+        if ( deduplicatePattern != null && fileSystem.matches( deduplicatePattern ) )
+        {
+            checksumAlgorithm = config.getFileChecksumAlgorithm();
+        }
         try
         {
             return new PathDBOutputStream( pathDB, physicalStore, fileSystem, path, fileInfo,
                                            physicalStore.getOutputStream( fileInfo ),
-                                           config.getFileChecksumAlgorithm(),
+                                           checksumAlgorithm,
                                            timeoutUnit.toMillis( timeout ));
         }
         catch ( NoSuchAlgorithmException e )

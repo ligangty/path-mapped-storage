@@ -36,6 +36,8 @@ public class DefaultPathMappedStorageConfig
 
     private String fileChecksumAlgorithm = DEFAULT_FILE_CHECKSUM_ALGORITHM;
 
+    private String deduplicatePattern;
+
     public DefaultPathMappedStorageConfig()
     {
     }
@@ -99,5 +101,16 @@ public class DefaultPathMappedStorageConfig
     public void setGcBatchSize( int gcBatchSize )
     {
         this.gcBatchSize = gcBatchSize;
+    }
+
+    @Override
+    public String getDeduplicatePattern()
+    {
+        return deduplicatePattern;
+    }
+
+    public void setDeduplicatePattern( String deduplicatePattern )
+    {
+        this.deduplicatePattern = deduplicatePattern;
     }
 }

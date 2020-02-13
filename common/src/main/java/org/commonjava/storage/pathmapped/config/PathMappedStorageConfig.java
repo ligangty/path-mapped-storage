@@ -24,6 +24,8 @@ public interface PathMappedStorageConfig
 
     String getFileChecksumAlgorithm();
 
+    String getDeduplicatePattern();
+
     Object getProperty( String key );
 
     int getGCBatchSize();

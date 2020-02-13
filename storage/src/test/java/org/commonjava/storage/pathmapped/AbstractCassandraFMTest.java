@@ -107,6 +107,7 @@ public abstract class AbstractCassandraFMTest
         config = new DefaultPathMappedStorageConfig( props );
         // In test, we should let gc happened immediately when triggered.
         config.setGcGracePeriodInHours( 0 );
+        config.setDeduplicatePattern( "^(generic|npm|test).*" );
         pathDB = new CassandraPathDB( config );
 
     }

@@ -53,6 +53,26 @@ public class ChecksumDedupeTest
     }
 
     @Test
+    public void checksumNotDupe_patternNotMatch()
+                    throws Exception
+    {
+        String fileSystem = "maven:hosted:test";
+
+        writeWithContent( fileSystem, path1, simpleContent );
+        writeWithContent( fileSystem, path2, simpleContent );
+
+        final String pathStorage1 = fileManager.getFileStoragePath( fileSystem, path1 );
+        final String pathStorage2 = fileManager.getFileStoragePath( fileSystem, path2 );
+
+        Assert.assertThat( pathStorage1, CoreMatchers.not( pathStorage2 ) );
+
+        checkPhysicalFile( 2, 2, pathStorage1, pathStorage2 );
+
+        checkRead( fileSystem, path1, true, simpleContent );
+        checkRead( fileSystem, path2, true, simpleContent );
+    }
+
+    @Test
     public void checksumNotDupe()
             throws Exception
     {

@@ -26,7 +26,6 @@ import com.datastax.driver.mapping.Result;
 
 import com.google.common.collect.TreeTraverser;
 import org.commonjava.storage.pathmapped.pathdb.datastax.model.DtxFileChecksum;
-import org.commonjava.storage.pathmapped.pathdb.datastax.model.DtxPath;
 import org.commonjava.storage.pathmapped.pathdb.datastax.model.DtxPathMap;
 import org.commonjava.storage.pathmapped.pathdb.datastax.model.DtxReclaim;
 import org.commonjava.storage.pathmapped.pathdb.datastax.model.DtxReverseMap;
@@ -46,7 +45,6 @@ import java.nio.file.Paths;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.Date;
 import java.util.List;
 import java.util.Set;

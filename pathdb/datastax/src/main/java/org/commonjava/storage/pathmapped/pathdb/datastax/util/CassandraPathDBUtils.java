@@ -79,5 +79,4 @@ public class CassandraPathDBUtils
                         + "PRIMARY KEY (checksum)"
                         + ");";
     }
-
 }

@@ -26,6 +26,7 @@ import com.datastax.driver.mapping.Result;
 
 import com.google.common.collect.TreeTraverser;
 import org.commonjava.storage.pathmapped.pathdb.datastax.model.DtxFileChecksum;
+import org.commonjava.storage.pathmapped.pathdb.datastax.model.DtxPath;
 import org.commonjava.storage.pathmapped.pathdb.datastax.model.DtxPathMap;
 import org.commonjava.storage.pathmapped.pathdb.datastax.model.DtxReclaim;
 import org.commonjava.storage.pathmapped.pathdb.datastax.model.DtxReverseMap;
@@ -44,14 +45,18 @@ import java.io.Closeable;
 import java.nio.file.Paths;
 import java.time.Duration;
 import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
 import java.util.Date;
 import java.util.List;
+import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
+import static java.util.Collections.emptySet;
 import static org.apache.commons.lang.StringUtils.isNotBlank;
 import static org.commonjava.storage.pathmapped.spi.PathDB.FileType.all;
 import static org.commonjava.storage.pathmapped.spi.PathDB.FileType.dir;
@@ -79,7 +84,7 @@ public class CassandraPathDB
 
     private final String keyspace;
 
-    private PreparedStatement preparedSingleExistQuery, preparedDoubleExistQuery, preparedListQuery;
+    private PreparedStatement preparedSingleExistQuery, preparedDoubleExistQuery, preparedListQuery, preparedContainingQuery;
 
     public CassandraPathDB( PathMappedStorageConfig config, Session session, String keyspace )
     {
@@ -136,6 +141,9 @@ public class CassandraPathDB
 
         preparedListQuery =
                         session.prepare( "SELECT * FROM " + keyspace + ".pathmap WHERE filesystem=? and parentpath=?;" );
+
+        preparedContainingQuery = session.prepare( "SELECT filesystem FROM " + keyspace
+                                                                   + ".pathmap WHERE filesystem IN ? and parentpath=? and filename=?;" );
     }
 
     @Override
@@ -152,6 +160,22 @@ public class CassandraPathDB
     public Session getSession()
     {
         return session;
+    }
+
+    @Override
+    public Set<String> getFileSystemContaining( Collection<String> candidates, String path )
+    {
+        logger.trace( "Get fileSystem containing path: {}", path );
+        if ( ROOT_DIR.equals( path ) )
+        {
+            return emptySet();
+        }
+        String parentPath = PathMapUtils.getParentPath( path );
+        String filename = PathMapUtils.getFilename( path );
+
+        BoundStatement bound = preparedContainingQuery.bind( candidates, parentPath, filename );
+        ResultSet result = session.execute( bound );
+        return result.all().stream().map( row -> row.get( 0, String.class ) ).collect( Collectors.toSet() );
     }
 
     /**
@@ -400,7 +424,7 @@ public class CassandraPathDB
 
         pathMapMapper.save( (DtxPathMap) pathMap );
 
-        // insert reverse mapping
+        // insert reverse mapping and path table
         addToReverseMap( pathMap.getFileId(), PathMapUtils.marshall( fileSystem, path ) );
 
         logger.debug( "Insert finished: {}", pathMap.getFilename() );
@@ -462,10 +486,7 @@ public class CassandraPathDB
         logger.debug( "Delete pathMap, {}", pathMap );
         pathMapMapper.delete( pathMap.getFileSystem(), pathMap.getParentPath(), pathMap.getFilename() );
 
-
         ReverseMap reverseMap = deleteFromReverseMap( pathMap.getFileId(), PathMapUtils.marshall( fileSystem, path ) );
-        logger.debug( "Updated reverseMap, {}", reverseMap );
-
         if ( reverseMap == null || reverseMap.getPaths() == null || reverseMap.getPaths().isEmpty() )
         {
             // clean checksum in checksum table as no file id refer to it.
@@ -478,6 +499,7 @@ public class CassandraPathDB
             // reclaim, but not remove from reverse table immediately (for race-detection/double-check)
             reclaim( fileId, pathMap.getFileStorage(), checksum );
         }
+
         return true;
     }
 
@@ -542,18 +564,12 @@ public class CassandraPathDB
             delete( toFileSystem, toPath );
         }
 
-        // check parent paths
-        String fromParentPath = PathMapUtils.getParentPath( fromPath );
         String toParentPath = PathMapUtils.getParentPath( toPath );
-        if ( fromParentPath != null && !fromParentPath.equals( toParentPath ) )
-        {
-            makeDirs( toFileSystem, toParentPath );
-        }
-
         String toFilename = PathMapUtils.getFilename( toPath );
-        pathMapMapper.save( new DtxPathMap( toFileSystem, toParentPath, toFilename, pathMap.getFileId(),
-                                            pathMap.getCreation(), pathMap.getExpiration(), pathMap.getSize(),
-                                            pathMap.getFileStorage(), pathMap.getChecksum() ) );
+        target = new DtxPathMap( toFileSystem, toParentPath, toFilename, pathMap.getFileId(), pathMap.getCreation(),
+                                 pathMap.getExpiration(), pathMap.getSize(), pathMap.getFileStorage(),
+                                 pathMap.getChecksum() );
+        insert( target );
         return true;
     }
 

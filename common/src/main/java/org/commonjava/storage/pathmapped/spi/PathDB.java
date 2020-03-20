@@ -18,8 +18,10 @@ package org.commonjava.storage.pathmapped.spi;
 import org.commonjava.storage.pathmapped.model.PathMap;
 import org.commonjava.storage.pathmapped.model.Reclaim;
 
+import java.util.Collection;
 import java.util.Date;
 import java.util.List;
+import java.util.Set;
 
 public interface PathDB
 {
@@ -56,5 +58,7 @@ public interface PathDB
     default List<Reclaim> listOrphanedFiles() { return listOrphanedFiles( 0 ); }
 
     void removeFromReclaim( Reclaim reclaim );
+
+    Set<String> getFileSystemContaining( Collection<String> candidates, String path );
 
 }

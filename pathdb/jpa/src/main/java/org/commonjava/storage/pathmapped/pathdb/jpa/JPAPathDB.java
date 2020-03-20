@@ -33,9 +33,12 @@ import javax.persistence.EntityManagerFactory;
 import javax.persistence.Persistence;
 import javax.persistence.Query;
 import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
 import java.util.Date;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 public class JPAPathDB
                 implements PathDB
@@ -362,6 +365,12 @@ public class JPAPathDB
     public void removeFromReclaim( Reclaim reclaim )
     {
         entitymanager.remove( reclaim );
+    }
+
+    @Override
+    public Set<String> getFileSystemContaining( Collection<String> candidates, String path )
+    {
+        return Collections.emptySet();
     }
 
     private JpaPathKey getPathKey( String fileSystem, String path )

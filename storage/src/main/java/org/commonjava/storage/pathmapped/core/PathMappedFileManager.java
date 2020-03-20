@@ -31,9 +31,11 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.security.NoSuchAlgorithmException;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
@@ -76,6 +78,11 @@ public class PathMappedFileManager implements Closeable
         }
 
         deduplicatePattern = config.getDeduplicatePattern();
+    }
+
+    public Set<String> getFileSystemContaining( Collection<String> candidates, String path )
+    {
+        return pathDB.getFileSystemContaining( candidates, path );
     }
 
     public InputStream openInputStream( String fileSystem, String path ) throws IOException

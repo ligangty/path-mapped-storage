@@ -61,4 +61,5 @@ public interface PathDB
 
     Set<String> getFileSystemContaining( Collection<String> candidates, String path );
 
+    String getFirstFileSystemContaining( Collection<String> candidates, String path );
 }

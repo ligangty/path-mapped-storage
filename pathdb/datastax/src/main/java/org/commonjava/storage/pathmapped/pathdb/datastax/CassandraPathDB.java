@@ -19,6 +19,7 @@ import com.datastax.driver.core.BoundStatement;
 import com.datastax.driver.core.Cluster;
 import com.datastax.driver.core.PreparedStatement;
 import com.datastax.driver.core.ResultSet;
+import com.datastax.driver.core.Row;
 import com.datastax.driver.core.Session;
 import com.datastax.driver.mapping.Mapper;
 import com.datastax.driver.mapping.MappingManager;
@@ -82,7 +83,8 @@ public class CassandraPathDB
 
     private final String keyspace;
 
-    private PreparedStatement preparedSingleExistQuery, preparedDoubleExistQuery, preparedListQuery, preparedContainingQuery;
+    private PreparedStatement preparedSingleExistQuery, preparedDoubleExistQuery, preparedListQuery,
+                    preparedContainingQuery, preparedFirstContainingQuery;
 
     public CassandraPathDB( PathMappedStorageConfig config, Session session, String keyspace )
     {
@@ -140,8 +142,12 @@ public class CassandraPathDB
         preparedListQuery =
                         session.prepare( "SELECT * FROM " + keyspace + ".pathmap WHERE filesystem=? and parentpath=?;" );
 
-        preparedContainingQuery = session.prepare( "SELECT filesystem FROM " + keyspace
-                                                                   + ".pathmap WHERE filesystem IN ? and parentpath=? and filename=?;" );
+        String containingQuery = "SELECT filesystem FROM " + keyspace
+                        + ".pathmap WHERE filesystem IN ? and parentpath=? and filename=?";
+
+        preparedContainingQuery = session.prepare( containingQuery + ";" );
+
+        preparedFirstContainingQuery = session.prepare( containingQuery + " limit 1;" );
     }
 
     @Override
@@ -163,7 +169,7 @@ public class CassandraPathDB
     @Override
     public Set<String> getFileSystemContaining( Collection<String> candidates, String path )
     {
-        logger.trace( "Get fileSystem containing path: {}", path );
+        logger.debug( "Get fileSystem containing path: {}", path );
         if ( ROOT_DIR.equals( path ) )
         {
             return emptySet();
@@ -174,6 +180,27 @@ public class CassandraPathDB
         BoundStatement bound = preparedContainingQuery.bind( candidates, parentPath, filename );
         ResultSet result = session.execute( bound );
         return result.all().stream().map( row -> row.get( 0, String.class ) ).collect( Collectors.toSet() );
+    }
+
+    @Override
+    public String getFirstFileSystemContaining( Collection<String> candidates, String path )
+    {
+        logger.debug( "Get first fileSystem containing path: {}", path );
+        if ( ROOT_DIR.equals( path ) )
+        {
+            return null;
+        }
+        String parentPath = PathMapUtils.getParentPath( path );
+        String filename = PathMapUtils.getFilename( path );
+
+        BoundStatement bound = preparedFirstContainingQuery.bind( candidates, parentPath, filename );
+        ResultSet result = session.execute( bound );
+        Row row = result.one();
+        if ( row != null )
+        {
+            return row.get( 0, String.class );
+        }
+        return null;
     }
 
     /**

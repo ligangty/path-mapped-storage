@@ -19,12 +19,12 @@ import com.datastax.driver.core.BoundStatement;
 import com.datastax.driver.core.Cluster;
 import com.datastax.driver.core.PreparedStatement;
 import com.datastax.driver.core.ResultSet;
-import com.datastax.driver.core.Row;
 import com.datastax.driver.core.Session;
 import com.datastax.driver.mapping.Mapper;
 import com.datastax.driver.mapping.MappingManager;
 import com.datastax.driver.mapping.Result;
 
+import com.google.common.collect.Lists;
 import com.google.common.collect.TreeTraverser;
 import org.commonjava.storage.pathmapped.pathdb.datastax.model.DtxFileChecksum;
 import org.commonjava.storage.pathmapped.pathdb.datastax.model.DtxPathMap;
@@ -67,6 +67,8 @@ public class CassandraPathDB
 {
     private final Logger logger = LoggerFactory.getLogger( getClass() );
 
+    private static int DEFAULT_GET_FIRST_BATCH_SIZE = 1000;
+
     private Session session;
 
     private Cluster cluster;
@@ -84,7 +86,7 @@ public class CassandraPathDB
     private final String keyspace;
 
     private PreparedStatement preparedSingleExistQuery, preparedDoubleExistQuery, preparedListQuery,
-                    preparedContainingQuery, preparedFirstContainingQuery;
+                    preparedContainingQuery;
 
     public CassandraPathDB( PathMappedStorageConfig config, Session session, String keyspace )
     {
@@ -142,12 +144,8 @@ public class CassandraPathDB
         preparedListQuery =
                         session.prepare( "SELECT * FROM " + keyspace + ".pathmap WHERE filesystem=? and parentpath=?;" );
 
-        String containingQuery = "SELECT filesystem FROM " + keyspace
-                        + ".pathmap WHERE filesystem IN ? and parentpath=? and filename=?";
-
-        preparedContainingQuery = session.prepare( containingQuery + ";" );
-
-        preparedFirstContainingQuery = session.prepare( containingQuery + " limit 1;" );
+        preparedContainingQuery = session.prepare( "SELECT filesystem FROM " + keyspace
+                                                                   + ".pathmap WHERE filesystem IN ? and parentpath=? and filename=?;" );
     }
 
     @Override
@@ -169,7 +167,7 @@ public class CassandraPathDB
     @Override
     public Set<String> getFileSystemContaining( Collection<String> candidates, String path )
     {
-        logger.debug( "Get fileSystem containing path: {}", path );
+        logger.debug( "Get fileSystem containing path {}, candidates: {}", path, candidates );
         if ( ROOT_DIR.equals( path ) )
         {
             return emptySet();
@@ -182,23 +180,30 @@ public class CassandraPathDB
         return result.all().stream().map( row -> row.get( 0, String.class ) ).collect( Collectors.toSet() );
     }
 
+    /**
+     * Get the first fileSystem in the candidates containing the path.
+     *
+     * The CQL query results are not returned in the order in which the key was specified in the IN clause.
+     * The results are returned in the natural order of the column so we can not rely on the query like '...limit 1'.
+     */
     @Override
-    public String getFirstFileSystemContaining( Collection<String> candidates, String path )
+    public String getFirstFileSystemContaining( List<String> candidates, String path )
     {
-        logger.debug( "Get first fileSystem containing path: {}", path );
-        if ( ROOT_DIR.equals( path ) )
+        logger.debug( "Get first fileSystem containing path {}, candidates: {}", path, candidates );
+        List<List<String>> batches = Lists.partition( candidates, DEFAULT_GET_FIRST_BATCH_SIZE );
+        for ( List<String> batch : batches )
         {
-            return null;
-        }
-        String parentPath = PathMapUtils.getParentPath( path );
-        String filename = PathMapUtils.getFilename( path );
-
-        BoundStatement bound = preparedFirstContainingQuery.bind( candidates, parentPath, filename );
-        ResultSet result = session.execute( bound );
-        Row row = result.one();
-        if ( row != null )
-        {
-            return row.get( 0, String.class );
+            Set<String> ret = getFileSystemContaining( batch, path );
+            if ( !ret.isEmpty() )
+            {
+                for ( String candidate : batch )
+                {
+                    if ( ret.contains( candidate ) )
+                    {
+                        return candidate;
+                    }
+                }
+            }
         }
         return null;
     }

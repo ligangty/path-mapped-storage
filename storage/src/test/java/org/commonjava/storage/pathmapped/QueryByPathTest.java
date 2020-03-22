@@ -74,6 +74,24 @@ public class QueryByPathTest
     }
 
     @Test
+    public void getFirst() throws IOException
+    {
+        writeWithContent( fileManager.openOutputStream( repo1, path1 ), simpleContent );
+        writeWithContent( fileManager.openOutputStream( repo2, path1 ), simpleContent );
+
+        List<String> candidates = Arrays.asList( repo1, repo2, repoNoSuchPath );
+        String ret = fileManager.getFirstFileSystemContaining( candidates, path1 );
+        System.out.println( ">>> " + ret );
+        assertTrue( ret != null && ret.equals( repo1 ) );
+
+        // switch repo1 and repo2
+        candidates = Arrays.asList( repo2, repo1, repoNoSuchPath );
+        ret = fileManager.getFirstFileSystemContaining( candidates, path1 );
+        System.out.println( ">>> " + ret );
+        assertTrue( ret != null && ret.equals( repo2 ) );
+    }
+
+    @Test
     public void copy() throws IOException
     {
         String from = repo1;
@@ -96,20 +114,20 @@ public class QueryByPathTest
 
     /**
      * Result:
-     * getFirstFileSystemContaining is 10+ times faster than for loop.
+     * getFirstFileSystemContaining is 6+ times faster than for-loop.
      *
      * ------- getFileSystemContaining ---------
-     * foo/bar/1.0/bar-1.0-1500.xml, exist, (424)
-     * foo/bar/1.0/bar-1.0-99999.xml, not exist, (289)
-     * none/exist/ (299)
+     * foo/bar/1.0/bar-1.0-1500.xml, exist, (313)
+     * foo/bar/1.0/bar-1.0-99999.xml, not exist, (296)
+     * none/exist/ (283)
      * ------- getFirstFileSystemContaining ---------
-     * foo/bar/1.0/bar-1.0-1500.xml, exist, (91)
-     * foo/bar/1.0/bar-1.0-99999.xml, not exist, (69)
-     * none/exist/, not exist, (78)
+     * foo/bar/1.0/bar-1.0-1500.xml, exist, (187)
+     * foo/bar/1.0/bar-1.0-99999.xml, not exist, (284)
+     * none/exist/, not exist, (292)
      * ------- for loop ---------
-     * foo/bar/1.0/bar-1.0-1500.xml, exist, (1308)
-     * foo/bar/1.0/bar-1.0-99999.xml, not exist, (2041)
-     * none/exist/, not exist, (1406)
+     * foo/bar/1.0/bar-1.0-1500.xml, exist, (1122)
+     * foo/bar/1.0/bar-1.0-99999.xml, not exist, (1952)
+     * none/exist/, not exist, (1270)
      */
     @Ignore
     @Test

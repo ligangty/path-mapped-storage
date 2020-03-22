@@ -109,7 +109,7 @@ public class MeasuredPathDB
     }
 
     @Override
-    public String getFirstFileSystemContaining( Collection<String> candidates, String path )
+    public String getFirstFileSystemContaining( List<String> candidates, String path )
     {
         return measure( () -> decorated.getFirstFileSystemContaining( candidates, path ), "getFirstFileSystemContaining" );
     }

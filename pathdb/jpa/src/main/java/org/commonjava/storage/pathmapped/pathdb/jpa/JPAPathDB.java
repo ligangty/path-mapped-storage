@@ -374,7 +374,7 @@ public class JPAPathDB
     }
 
     @Override
-    public String getFirstFileSystemContaining( Collection<String> candidates, String path )
+    public String getFirstFileSystemContaining( List<String> candidates, String path )
     {
         return null;
     }

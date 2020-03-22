@@ -85,7 +85,7 @@ public class PathMappedFileManager implements Closeable
         return pathDB.getFileSystemContaining( candidates, path );
     }
 
-    public String getFirstFileSystemContaining( Collection<String> candidates, String path )
+    public String getFirstFileSystemContaining( List<String> candidates, String path )
     {
         return pathDB.getFirstFileSystemContaining( candidates, path );
     }

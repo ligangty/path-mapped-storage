@@ -173,7 +173,7 @@ public class QueryByPathTest
         // dir
         String noneExistDirPath = "none/exist/";
         begin = System.currentTimeMillis();
-        ret = fileManager.getFileSystemContaining( candidates, noneExistDirPath );
+        ret = fileManager.getFileSystemContainingDirectory( candidates, noneExistDirPath );
         elapse = System.currentTimeMillis() - begin;
         printIt( sb, noneExistDirPath + " (" + elapse + ")" );
 

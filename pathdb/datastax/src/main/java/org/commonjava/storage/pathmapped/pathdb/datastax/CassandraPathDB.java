@@ -180,6 +180,16 @@ public class CassandraPathDB
         return result.all().stream().map( row -> row.get( 0, String.class ) ).collect( Collectors.toSet() );
     }
 
+    @Override
+    public Set<String> getFileSystemContainingDirectory( Collection<String> candidates, String path )
+    {
+        if ( !path.endsWith( "/" ) )
+        {
+            path += "/";
+        }
+        return getFileSystemContaining( candidates, path );
+    }
+
     /**
      * Get the first fileSystem in the candidates containing the path.
      *

@@ -80,6 +80,11 @@ public class PathMappedFileManager implements Closeable
         deduplicatePattern = config.getDeduplicatePattern();
     }
 
+    public Set<String> getFileSystemContainingDirectory( Collection<String> candidates, String path )
+    {
+        return pathDB.getFileSystemContainingDirectory( candidates, path );
+    }
+
     public Set<String> getFileSystemContaining( Collection<String> candidates, String path )
     {
         return pathDB.getFileSystemContaining( candidates, path );

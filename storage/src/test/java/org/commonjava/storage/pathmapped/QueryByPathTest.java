@@ -15,11 +15,9 @@
  */
 package org.commonjava.storage.pathmapped;
 
-import org.junit.Ignore;
 import org.junit.Test;
 
 import java.io.IOException;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Set;
@@ -110,146 +108,6 @@ public class QueryByPathTest
         System.out.println( ">>> " + ret );
         assertTrue( ret.size() == 2 );
         assertTrue( ret.containsAll( Arrays.asList( repo1, repo2 ) ) );
-    }
-
-    /**
-     * Result:
-     * getFirstFileSystemContaining is 6+ times faster than for-loop.
-     *
-     * ------- getFileSystemContaining ---------
-     * foo/bar/1.0/bar-1.0-1500.xml, exist, (313)
-     * foo/bar/1.0/bar-1.0-99999.xml, not exist, (296)
-     * none/exist/ (283)
-     * ------- getFirstFileSystemContaining ---------
-     * foo/bar/1.0/bar-1.0-1500.xml, exist, (187)
-     * foo/bar/1.0/bar-1.0-99999.xml, not exist, (284)
-     * none/exist/, not exist, (292)
-     * ------- for loop ---------
-     * foo/bar/1.0/bar-1.0-1500.xml, exist, (1122)
-     * foo/bar/1.0/bar-1.0-99999.xml, not exist, (1952)
-     * none/exist/, not exist, (1270)
-     */
-    @Ignore
-    @Test
-    public void performance() throws IOException
-    {
-        final String repo = "maven:hosted:build-%s";
-        final String path = "foo/bar/1.0/bar-1.0-%s.xml";
-
-        // use another path to introduce more entries
-        final String anotherPath =
-                        "my/very/very/very/long/path/to/introduce/more/entries/for/get/file/system/containing/performance/test/foo/bar/1.0/bar-1.0-%s.xml";
-
-        List<String> candidates = new ArrayList<>();
-
-        // prepare
-        for ( int i = 0; i < 3000; i++ )
-        {
-            String repoName = String.format( repo, i );
-            writeWithContent( fileManager.openOutputStream( repoName, String.format( path, i ) ), simpleContent );
-            writeWithContent( fileManager.openOutputStream( repoName, String.format( anotherPath, i ) ),
-                              simpleContent );
-            candidates.add( repoName );
-        }
-
-        StringBuilder sb = new StringBuilder();
-
-        printIt( sb, "------- getFileSystemContaining ---------" );
-
-        // exist
-        String targetPath = String.format( path, 1500 );
-        long begin = System.currentTimeMillis();
-        Set<String> ret = fileManager.getFileSystemContaining( candidates, targetPath );
-        long elapse = System.currentTimeMillis() - begin;
-        printIt( sb, targetPath + ", " + ( !ret.isEmpty() ? "exist" : "not exist" ) + ", (" + elapse + ")" );
-
-        // not exist
-        targetPath = String.format( path, 99999 );
-        begin = System.currentTimeMillis();
-        ret = fileManager.getFileSystemContaining( candidates, targetPath );
-        elapse = System.currentTimeMillis() - begin;
-        printIt( sb, targetPath + ", " + ( !ret.isEmpty() ? "exist" : "not exist" ) + ", (" + elapse + ")" );
-
-        // dir
-        String noneExistDirPath = "none/exist/";
-        begin = System.currentTimeMillis();
-        ret = fileManager.getFileSystemContainingDirectory( candidates, noneExistDirPath );
-        elapse = System.currentTimeMillis() - begin;
-        printIt( sb, noneExistDirPath + " (" + elapse + ")" );
-
-        printIt( sb, "------- getFirstFileSystemContaining ---------" );
-
-        // exist
-        targetPath = String.format( path, 1500 );
-        begin = System.currentTimeMillis();
-        String firstRet = fileManager.getFirstFileSystemContaining( candidates, targetPath );
-        elapse = System.currentTimeMillis() - begin;
-        printIt( sb, targetPath + ", " + ( firstRet != null ? "exist" : "not exist" ) + ", (" + elapse + ")" );
-
-        // not exist
-        targetPath = String.format( path, 99999 );
-        begin = System.currentTimeMillis();
-        firstRet = fileManager.getFirstFileSystemContaining( candidates, targetPath );
-        elapse = System.currentTimeMillis() - begin;
-        printIt( sb, targetPath + ", " + ( firstRet != null ? "exist" : "not exist" ) + ", (" + elapse + ")" );
-
-        // dir
-        begin = System.currentTimeMillis();
-        firstRet = fileManager.getFirstFileSystemContaining( candidates, noneExistDirPath );
-        elapse = System.currentTimeMillis() - begin;
-        printIt( sb, noneExistDirPath + ", " + ( firstRet != null ? "exist" : "not exist" ) + ", (" + elapse + ")" );
-
-        printIt( sb, "------- for loop ---------" );
-
-        // exist
-        boolean exist = false;
-        targetPath = String.format( path, 1500 );
-        begin = System.currentTimeMillis();
-        for ( String candidate : candidates )
-        {
-            exist = fileManager.exists( candidate, targetPath );
-            if ( exist )
-            {
-                break;
-            }
-        }
-        elapse = System.currentTimeMillis() - begin;
-        printIt( sb, targetPath + ", " + ( exist ? "exist" : "not exist" ) + ", (" + elapse + ")" );
-
-        // none exist
-        targetPath = String.format( path, 99999 );
-        begin = System.currentTimeMillis();
-        for ( String candidate : candidates )
-        {
-            exist = fileManager.exists( candidate, targetPath );
-            if ( exist )
-            {
-                break;
-            }
-        }
-        elapse = System.currentTimeMillis() - begin;
-        printIt( sb, targetPath + ", " + ( exist ? "exist" : "not exist" ) + ", (" + elapse + ")" );
-
-        // dir
-        begin = System.currentTimeMillis();
-        for ( String candidate : candidates )
-        {
-            exist = fileManager.exists( candidate, noneExistDirPath );
-            if ( exist )
-            {
-                break;
-            }
-        }
-        elapse = System.currentTimeMillis() - begin;
-        printIt( sb, noneExistDirPath + ", " + ( exist ? "exist" : "not exist" ) + ", (" + elapse + ")" );
-
-        // print all
-        System.out.println( sb.toString() );
-    }
-
-    private void printIt( StringBuilder sb, String s )
-    {
-        sb.append( s + "\n" );
     }
 
 }

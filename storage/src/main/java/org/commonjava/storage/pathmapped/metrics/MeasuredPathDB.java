@@ -62,13 +62,13 @@ public class MeasuredPathDB
     @Override
     public long getFileLength( String fileSystem, String path )
     {
-        return decorated.getFileLength( fileSystem, path );
+        return measure( () -> decorated.getFileLength( fileSystem, path ), "getFileLength" );
     }
 
     @Override
     public long getFileLastModified( String fileSystem, String path )
     {
-        return decorated.getFileLastModified( fileSystem, path );
+        return measure( () -> decorated.getFileLastModified( fileSystem, path ), "getFileLastModified" );
     }
 
     @Override
@@ -115,15 +115,21 @@ public class MeasuredPathDB
     }
 
     @Override
+    public Set<String> getFileSystemContainingDirectory( Collection<String> candidates, String path )
+    {
+        return measure( () -> decorated.getFileSystemContainingDirectory( candidates, path ), "getFileSystemContainingDirectory" );
+    }
+
+    @Override
     public String getStorageFile( String fileSystem, String path )
     {
-        return decorated.getStorageFile( fileSystem, path );
+        return measure( () -> decorated.getStorageFile( fileSystem, path ), "getStorageFile" );
     }
 
     @Override
     public boolean copy( String fromFileSystem, String fromPath, String toFileSystem, String toPath )
     {
-        return decorated.copy( fromFileSystem, fromPath, toFileSystem, toPath );
+        return measure( () -> decorated.copy( fromFileSystem, fromPath, toFileSystem, toPath ), "copy" );
     }
 
     @Override
@@ -135,7 +141,7 @@ public class MeasuredPathDB
     @Override
     public List<Reclaim> listOrphanedFiles( int limit )
     {
-        return decorated.listOrphanedFiles( limit );
+        return measure( () -> decorated.listOrphanedFiles( limit ), "listOrphanedFiles" );
     }
 
     @Override
@@ -148,7 +154,7 @@ public class MeasuredPathDB
 
     private void measure( Runnable runnable, String metricName )
     {
-        if ( metricRegistry != null )
+        if ( metricRegistry != null && isMetricEnabled( metricName ) )
         {
             Timer.Context context = metricRegistry.timer( name( metricPrefix, metricName, TIMER ) ).time();
             try
@@ -170,7 +176,7 @@ public class MeasuredPathDB
     {
         try
         {
-            if ( metricRegistry != null )
+            if ( metricRegistry != null && isMetricEnabled( metricName ) )
             {
                 Timer.Context context = metricRegistry.timer( name( metricPrefix, metricName, TIMER ) ).time();
                 try
@@ -193,6 +199,11 @@ public class MeasuredPathDB
             logger.warn( "Call failed", e );
             return null;
         }
+    }
+
+    protected boolean isMetricEnabled( String metricName )
+    {
+        return true;
     }
 
 }

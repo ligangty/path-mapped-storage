@@ -15,7 +15,6 @@
  */
 package org.commonjava.storage.pathmapped.core;
 
-import org.apache.commons.lang.StringUtils;
 import org.commonjava.cdi.util.weft.NamedThreadFactory;
 import org.commonjava.storage.pathmapped.config.PathMappedStorageConfig;
 import org.commonjava.storage.pathmapped.model.PathMap;
@@ -235,21 +234,35 @@ public class PathMappedFileManager implements Closeable
 
     public boolean exists( String fileSystem, String path )
     {
-        // NOS-2289 After checking the database, I found that there are some mismatch between database entries
-        //          and physical store files. There are entries in database, but the corresponding physical files
-        //          missed in physical location. So I think we need to check real existence of from physical level
-        //          but not just from db level to make sure if it really exists.
-        if ( StringUtils.isBlank( path ) )
+        if ( isBlank( path ) )
         {
-            logger.warn( "Checking existence of an empty path for file system {}, which is considered as not existed", fileSystem );
+            logger.warn( "Blank path for file system {} is considered as not existed", fileSystem );
             return false;
         }
-        if ( isDirectory( fileSystem, path ) )
+        boolean exist = pathDB.exists( fileSystem, path );
+        if ( !exist )
         {
-            return pathDB.exists( fileSystem, path );
+            return false;
         }
-        final String storageFile = pathDB.getStorageFile( fileSystem, path );
-        return physicalStore.exists( storageFile );
+        // check physical file
+        String storageFile = pathDB.getStorageFile( fileSystem, path );
+        if ( isBlank( storageFile ) )
+        {
+            return true; // dir
+        }
+        else
+        {
+            if ( physicalStore.exists( storageFile ) )
+            {
+                return true;
+            }
+            else
+            {
+                logger.warn( "File in pathDB but physical file missing!, fileSystem: {}, path: {}, storageFile: {}",
+                             fileSystem, path, storageFile );
+                return false;
+            }
+        }
     }
 
     public boolean isDirectory( String fileSystem, String path )

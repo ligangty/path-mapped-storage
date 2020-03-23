@@ -19,6 +19,7 @@ import com.datastax.driver.core.BoundStatement;
 import com.datastax.driver.core.Cluster;
 import com.datastax.driver.core.PreparedStatement;
 import com.datastax.driver.core.ResultSet;
+import com.datastax.driver.core.Row;
 import com.datastax.driver.core.Session;
 import com.datastax.driver.mapping.Mapper;
 import com.datastax.driver.mapping.MappingManager;
@@ -44,14 +45,18 @@ import java.io.Closeable;
 import java.nio.file.Paths;
 import java.time.Duration;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
 import java.util.Date;
 import java.util.List;
+import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
+import static java.util.Collections.emptySet;
 import static org.apache.commons.lang.StringUtils.isNotBlank;
 import static org.commonjava.storage.pathmapped.spi.PathDB.FileType.all;
 import static org.commonjava.storage.pathmapped.spi.PathDB.FileType.dir;
@@ -79,7 +84,7 @@ public class CassandraPathDB
 
     private final String keyspace;
 
-    private PreparedStatement preparedSingleExistQuery, preparedDoubleExistQuery, preparedListQuery;
+    private PreparedStatement preparedExistQuery, preparedListQuery, preparedContainingQuery;
 
     public CassandraPathDB( PathMappedStorageConfig config, Session session, String keyspace )
     {
@@ -128,14 +133,14 @@ public class CassandraPathDB
         reclaimMapper = manager.mapper( DtxReclaim.class, keyspace );
         fileChecksumMapper = manager.mapper( DtxFileChecksum.class, keyspace );
 
-        preparedSingleExistQuery = session.prepare(
-                        "SELECT count(*) FROM " + keyspace + ".pathmap WHERE filesystem=? and parentpath=? and filename=?;" );
-
-        preparedDoubleExistQuery = session.prepare( "SELECT count(*) FROM " + keyspace
-                                                                    + ".pathmap WHERE filesystem=? and parentpath=? and filename in (?,?);" );
+        preparedExistQuery = session.prepare( "SELECT filename FROM " + keyspace
+                                                              + ".pathmap WHERE filesystem=? and parentpath=? and filename IN ? LIMIT 1;" );
 
         preparedListQuery =
                         session.prepare( "SELECT * FROM " + keyspace + ".pathmap WHERE filesystem=? and parentpath=?;" );
+
+        preparedContainingQuery = session.prepare( "SELECT filesystem FROM " + keyspace
+                                                                   + ".pathmap WHERE filesystem IN ? and parentpath=? and filename=?;" );
     }
 
     @Override
@@ -152,6 +157,46 @@ public class CassandraPathDB
     public Session getSession()
     {
         return session;
+    }
+
+    @Override
+    public Set<String> getFileSystemContaining( Collection<String> candidates, String path )
+    {
+        logger.debug( "Get fileSystem containing path {}, candidates: {}", path, candidates );
+        if ( ROOT_DIR.equals( path ) )
+        {
+            return emptySet();
+        }
+        String parentPath = PathMapUtils.getParentPath( path );
+        String filename = PathMapUtils.getFilename( path );
+
+        BoundStatement bound = preparedContainingQuery.bind( candidates, parentPath, filename );
+        ResultSet result = session.execute( bound );
+        return result.all().stream().map( row -> row.get( 0, String.class ) ).collect( Collectors.toSet() );
+    }
+
+    /**
+     * Get the first fileSystem in the candidates containing the path.
+     *
+     * The CQL query results are not returned in the order in which the key was specified in the IN clause.
+     * The results are returned in the natural order of the column so we can not rely on the query like '...limit 1'.
+     */
+    @Override
+    public String getFirstFileSystemContaining( List<String> candidates, String path )
+    {
+        logger.debug( "Get first fileSystem containing path {}, candidates: {}", path, candidates );
+        Set<String> ret = getFileSystemContaining( candidates, path );
+        if ( !ret.isEmpty() )
+        {
+            for ( String candidate : candidates )
+            {
+                if ( ret.contains( candidate ) )
+                {
+                    return candidate;
+                }
+            }
+        }
+        return null;
     }
 
     /**
@@ -309,32 +354,59 @@ public class CassandraPathDB
     /**
      * Check if the specified path exist. If the path does not end with /, e.g., "foo/bar", we need to check both "foo/bar"
      * and "foo/bar/".
+     * @return FileType.{file/dir} if exist. Null if not exist.
      */
     @Override
-    public boolean exists( String fileSystem, String path )
+    public FileType exists( String fileSystem, String path )
     {
-        logger.trace( "Check if exists for {}-{}", fileSystem, path );
         if ( ROOT_DIR.equals( path ) )
         {
-            return true;
+            return dir;
         }
+
         String parentPath = PathMapUtils.getParentPath( path );
         String filename = PathMapUtils.getFilename( path );
 
         BoundStatement bound;
         if ( filename.endsWith( "/" ) )
         {
-            bound = preparedSingleExistQuery.bind( fileSystem, parentPath, filename );
+            bound = preparedExistQuery.bind( fileSystem, parentPath, Arrays.asList( filename ) );
         }
         else
         {
-            bound = preparedDoubleExistQuery.bind( fileSystem, parentPath, filename, filename + "/" );
+            bound = preparedExistQuery.bind( fileSystem, parentPath, Arrays.asList( filename, filename + "/" ) );
         }
         ResultSet result = session.execute( bound );
-        long count = result.one().get( 0, Long.class );
-        boolean exists = count > 0;
-        logger.trace( "{}-{} exists in path db: {}", fileSystem, path, exists );
-        return exists;
+        FileType ret = getFileTypeOrNull( result );
+        if ( ret != null )
+        {
+            logger.trace( "{} exists in fileSystem {}, fileType: {}", path, fileSystem, ret );
+        }
+        else
+        {
+            logger.trace( "{} not exists in fileSystem {}", path, fileSystem );
+        }
+        return ret;
+    }
+
+    private FileType getFileTypeOrNull( ResultSet result )
+    {
+        Row row = result.one();
+        if ( row != null )
+        {
+            String f = row.get( 0, String.class );
+            FileType ret;
+            if ( f.endsWith( "/" ) )
+            {
+                ret = dir;
+            }
+            else
+            {
+                ret = file;
+            }
+            return ret;
+        }
+        return null;
     }
 
     @Override
@@ -400,30 +472,25 @@ public class CassandraPathDB
 
         pathMapMapper.save( (DtxPathMap) pathMap );
 
-        // insert reverse mapping
+        // insert reverse mapping and path table
         addToReverseMap( pathMap.getFileId(), PathMapUtils.marshall( fileSystem, path ) );
 
         logger.debug( "Insert finished: {}", pathMap.getFilename() );
     }
 
-    /**
-     * There is a short cut mainly due to performance consideration. If path ends with /, it is safe to assume it is directory.
-     * The general use case is caller to recursively list a dir and for all sub-folders we return a name with slash.
-     */
     @Override
     public boolean isDirectory( String fileSystem, String path )
     {
-        if ( path.endsWith( "/" ) )
+        if ( !path.endsWith( "/" ) )
         {
-            return true;
+            path += "/";
         }
         String parentPath = PathMapUtils.getParentPath( path );
-        String filename = PathMapUtils.getFilename( path ) + "/";
+        String filename = PathMapUtils.getFilename( path );
 
-        BoundStatement bound = preparedSingleExistQuery.bind( fileSystem, parentPath, filename );
+        BoundStatement bound = preparedExistQuery.bind( fileSystem, parentPath, Arrays.asList( filename ) );
         ResultSet result = session.execute( bound );
-        long count = result.one().get( 0, Long.class );
-        return count > 0;
+        return notNull( result );
     }
 
     @Override
@@ -436,10 +503,14 @@ public class CassandraPathDB
         String parentPath = PathMapUtils.getParentPath( path );
         String filename = PathMapUtils.getFilename( path );
 
-        BoundStatement bound = preparedSingleExistQuery.bind( fileSystem, parentPath, filename );
+        BoundStatement bound = preparedExistQuery.bind( fileSystem, parentPath, Arrays.asList( filename ) );
         ResultSet result = session.execute( bound );
-        long count = result.one().get( 0, Long.class );
-        return count > 0;
+        return notNull( result );
+    }
+
+    private boolean notNull( ResultSet result )
+    {
+        return result.one() != null;
     }
 
     @Override
@@ -462,10 +533,7 @@ public class CassandraPathDB
         logger.debug( "Delete pathMap, {}", pathMap );
         pathMapMapper.delete( pathMap.getFileSystem(), pathMap.getParentPath(), pathMap.getFilename() );
 
-
         ReverseMap reverseMap = deleteFromReverseMap( pathMap.getFileId(), PathMapUtils.marshall( fileSystem, path ) );
-        logger.debug( "Updated reverseMap, {}", reverseMap );
-
         if ( reverseMap == null || reverseMap.getPaths() == null || reverseMap.getPaths().isEmpty() )
         {
             // clean checksum in checksum table as no file id refer to it.
@@ -478,6 +546,7 @@ public class CassandraPathDB
             // reclaim, but not remove from reverse table immediately (for race-detection/double-check)
             reclaim( fileId, pathMap.getFileStorage(), checksum );
         }
+
         return true;
     }
 
@@ -542,18 +611,12 @@ public class CassandraPathDB
             delete( toFileSystem, toPath );
         }
 
-        // check parent paths
-        String fromParentPath = PathMapUtils.getParentPath( fromPath );
         String toParentPath = PathMapUtils.getParentPath( toPath );
-        if ( fromParentPath != null && !fromParentPath.equals( toParentPath ) )
-        {
-            makeDirs( toFileSystem, toParentPath );
-        }
-
         String toFilename = PathMapUtils.getFilename( toPath );
-        pathMapMapper.save( new DtxPathMap( toFileSystem, toParentPath, toFilename, pathMap.getFileId(),
-                                            pathMap.getCreation(), pathMap.getExpiration(), pathMap.getSize(),
-                                            pathMap.getFileStorage(), pathMap.getChecksum() ) );
+        target = new DtxPathMap( toFileSystem, toParentPath, toFilename, pathMap.getFileId(), pathMap.getCreation(),
+                                 pathMap.getExpiration(), pathMap.getSize(), pathMap.getFileStorage(),
+                                 pathMap.getChecksum() );
+        insert( target );
         return true;
     }
 
@@ -574,10 +637,9 @@ public class CassandraPathDB
         String parentPath = PathMapUtils.getParentPath( path );
         String filename = PathMapUtils.getFilename( path );
 
-        BoundStatement bound = preparedSingleExistQuery.bind( fileSystem, parentPath, filename );
+        BoundStatement bound = preparedExistQuery.bind( fileSystem, parentPath, Arrays.asList( filename ) );
         ResultSet result = session.execute( bound );
-        long count = result.one().get( 0, Long.class );
-        if ( count > 0 )
+        if ( notNull( result ) )
         {
             logger.debug( "Dir already exists, fileSystem: {}, path: {}", fileSystem, path );
             return;

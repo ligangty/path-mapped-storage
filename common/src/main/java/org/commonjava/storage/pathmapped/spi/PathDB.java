@@ -18,8 +18,10 @@ package org.commonjava.storage.pathmapped.spi;
 import org.commonjava.storage.pathmapped.model.PathMap;
 import org.commonjava.storage.pathmapped.model.Reclaim;
 
+import java.util.Collection;
 import java.util.Date;
 import java.util.List;
+import java.util.Set;
 
 public interface PathDB
 {
@@ -35,7 +37,7 @@ public interface PathDB
 
     long getFileLastModified( String fileSystem, String path );
 
-    boolean exists( String fileSystem, String path );
+    FileType exists( String fileSystem, String path );
 
     void insert( String fileSystem, String path, Date creation, Date expiration, String fileId, long size, String fileStorage, String checksum );
 
@@ -57,4 +59,7 @@ public interface PathDB
 
     void removeFromReclaim( Reclaim reclaim );
 
+    Set<String> getFileSystemContaining( Collection<String> candidates, String path );
+
+    String getFirstFileSystemContaining( List<String> candidates, String path );
 }

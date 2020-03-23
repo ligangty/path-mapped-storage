@@ -33,9 +33,12 @@ import javax.persistence.EntityManagerFactory;
 import javax.persistence.Persistence;
 import javax.persistence.Query;
 import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
 import java.util.Date;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 public class JPAPathDB
                 implements PathDB
@@ -102,14 +105,18 @@ public class JPAPathDB
     }
 
     @Override
-    public boolean exists( String fileSystem, String path )
+    public FileType exists( String fileSystem, String path )
     {
         PathMap pathMap = findPathMap( fileSystem, path );
         if ( pathMap != null )
         {
-            return true;
+            if ( pathMap.getFileId() != null )
+            {
+                return FileType.file;
+            }
+            return FileType.dir;
         }
-        return false;
+        return null;
     }
 
     @Override
@@ -362,6 +369,18 @@ public class JPAPathDB
     public void removeFromReclaim( Reclaim reclaim )
     {
         entitymanager.remove( reclaim );
+    }
+
+    @Override
+    public Set<String> getFileSystemContaining( Collection<String> candidates, String path )
+    {
+        return Collections.emptySet();
+    }
+
+    @Override
+    public String getFirstFileSystemContaining( List<String> candidates, String path )
+    {
+        return null;
     }
 
     private JpaPathKey getPathKey( String fileSystem, String path )

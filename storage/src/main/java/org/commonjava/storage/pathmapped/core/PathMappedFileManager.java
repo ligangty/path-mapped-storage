@@ -15,7 +15,6 @@
  */
 package org.commonjava.storage.pathmapped.core;
 
-import org.apache.commons.lang.StringUtils;
 import org.commonjava.cdi.util.weft.NamedThreadFactory;
 import org.commonjava.storage.pathmapped.config.PathMappedStorageConfig;
 import org.commonjava.storage.pathmapped.model.PathMap;
@@ -31,9 +30,11 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.security.NoSuchAlgorithmException;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
@@ -76,6 +77,25 @@ public class PathMappedFileManager implements Closeable
         }
 
         deduplicatePattern = config.getDeduplicatePattern();
+    }
+
+    public Set<String> getFileSystemContainingDirectory( Collection<String> candidates, String path )
+    {
+        if ( !path.endsWith( "/" ) )
+        {
+            path += "/";
+        }
+        return pathDB.getFileSystemContaining( candidates, path );
+    }
+
+    public Set<String> getFileSystemContaining( Collection<String> candidates, String path )
+    {
+        return pathDB.getFileSystemContaining( candidates, path );
+    }
+
+    public String getFirstFileSystemContaining( List<String> candidates, String path )
+    {
+        return pathDB.getFirstFileSystemContaining( candidates, path );
     }
 
     public InputStream openInputStream( String fileSystem, String path ) throws IOException
@@ -218,21 +238,34 @@ public class PathMappedFileManager implements Closeable
 
     public boolean exists( String fileSystem, String path )
     {
-        // NOS-2289 After checking the database, I found that there are some mismatch between database entries
-        //          and physical store files. There are entries in database, but the corresponding physical files
-        //          missed in physical location. So I think we need to check real existence of from physical level
-        //          but not just from db level to make sure if it really exists.
-        if ( StringUtils.isBlank( path ) )
+        if ( isBlank( path ) )
         {
-            logger.warn( "Checking existence of an empty path for file system {}, which is considered as not existed", fileSystem );
             return false;
         }
-        if ( isDirectory( fileSystem, path ) )
+        PathDB.FileType exist = pathDB.exists( fileSystem, path );
+        if ( exist != null )
         {
-            return pathDB.exists( fileSystem, path );
+            if ( exist == PathDB.FileType.dir )
+            {
+                return true;
+            }
+            // check physical file
+            String storageFile = pathDB.getStorageFile( fileSystem, path );
+            if ( storageFile != null )
+            {
+                if ( physicalStore.exists( storageFile ) )
+                {
+                    return true;
+                }
+                else
+                {
+                    logger.warn( "File in pathDB but physical file missing!, fileSystem: {}, path: {}, storageFile: {}",
+                                 fileSystem, path, storageFile );
+                    return false;
+                }
+            }
         }
-        final String storageFile = pathDB.getStorageFile( fileSystem, path );
-        return physicalStore.exists( storageFile );
+        return false;
     }
 
     public boolean isDirectory( String fileSystem, String path )

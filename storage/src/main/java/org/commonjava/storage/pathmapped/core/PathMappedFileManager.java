@@ -236,33 +236,32 @@ public class PathMappedFileManager implements Closeable
     {
         if ( isBlank( path ) )
         {
-            logger.warn( "Blank path for file system {} is considered as not existed", fileSystem );
             return false;
         }
-        boolean exist = pathDB.exists( fileSystem, path );
-        if ( !exist )
+        PathDB.FileType exist = pathDB.exists( fileSystem, path );
+        if ( exist != null )
         {
-            return false;
-        }
-        // check physical file
-        String storageFile = pathDB.getStorageFile( fileSystem, path );
-        if ( isBlank( storageFile ) )
-        {
-            return true; // dir
-        }
-        else
-        {
-            if ( physicalStore.exists( storageFile ) )
+            if ( exist == PathDB.FileType.dir )
             {
                 return true;
             }
-            else
+            // check physical file
+            String storageFile = pathDB.getStorageFile( fileSystem, path );
+            if ( storageFile != null )
             {
-                logger.warn( "File in pathDB but physical file missing!, fileSystem: {}, path: {}, storageFile: {}",
-                             fileSystem, path, storageFile );
-                return false;
+                if ( physicalStore.exists( storageFile ) )
+                {
+                    return true;
+                }
+                else
+                {
+                    logger.warn( "File in pathDB but physical file missing!, fileSystem: {}, path: {}, storageFile: {}",
+                                 fileSystem, path, storageFile );
+                    return false;
+                }
             }
         }
+        return false;
     }
 
     public boolean isDirectory( String fileSystem, String path )

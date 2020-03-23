@@ -37,7 +37,7 @@ public interface PathDB
 
     long getFileLastModified( String fileSystem, String path );
 
-    boolean exists( String fileSystem, String path );
+    FileType exists( String fileSystem, String path );
 
     void insert( String fileSystem, String path, Date creation, Date expiration, String fileId, long size, String fileStorage, String checksum );
 

@@ -105,14 +105,18 @@ public class JPAPathDB
     }
 
     @Override
-    public boolean exists( String fileSystem, String path )
+    public FileType exists( String fileSystem, String path )
     {
         PathMap pathMap = findPathMap( fileSystem, path );
         if ( pathMap != null )
         {
-            return true;
+            if ( pathMap.getFileId() != null )
+            {
+                return FileType.file;
+            }
+            return FileType.dir;
         }
-        return false;
+        return null;
     }
 
     @Override

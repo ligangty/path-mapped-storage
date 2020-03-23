@@ -19,6 +19,7 @@ import com.datastax.driver.core.BoundStatement;
 import com.datastax.driver.core.Cluster;
 import com.datastax.driver.core.PreparedStatement;
 import com.datastax.driver.core.ResultSet;
+import com.datastax.driver.core.Row;
 import com.datastax.driver.core.Session;
 import com.datastax.driver.mapping.Mapper;
 import com.datastax.driver.mapping.MappingManager;
@@ -135,7 +136,7 @@ public class CassandraPathDB
         reclaimMapper = manager.mapper( DtxReclaim.class, keyspace );
         fileChecksumMapper = manager.mapper( DtxFileChecksum.class, keyspace );
 
-        preparedExistQuery = session.prepare( "SELECT count(*) FROM " + keyspace
+        preparedExistQuery = session.prepare( "SELECT filename FROM " + keyspace
                                                               + ".pathmap WHERE filesystem=? and parentpath=? and filename IN ? LIMIT 1;" );
 
         preparedListQuery =
@@ -370,15 +371,16 @@ public class CassandraPathDB
     /**
      * Check if the specified path exist. If the path does not end with /, e.g., "foo/bar", we need to check both "foo/bar"
      * and "foo/bar/".
+     * @return FileType.{file/dir} if exist. Null if not exist.
      */
     @Override
-    public boolean exists( String fileSystem, String path )
+    public FileType exists( String fileSystem, String path )
     {
-        logger.trace( "Check if exists for {}-{}", fileSystem, path );
         if ( ROOT_DIR.equals( path ) )
         {
-            return true;
+            return dir;
         }
+
         String parentPath = PathMapUtils.getParentPath( path );
         String filename = PathMapUtils.getFilename( path );
 
@@ -392,10 +394,36 @@ public class CassandraPathDB
             bound = preparedExistQuery.bind( fileSystem, parentPath, Arrays.asList( filename, filename + "/" ) );
         }
         ResultSet result = session.execute( bound );
-        long count = result.one().get( 0, Long.class );
-        boolean exists = count > 0;
-        logger.trace( "{}-{} exists in path db: {}", fileSystem, path, exists );
-        return exists;
+        FileType ret = getFileTypeOrNull( result );
+        if ( ret != null )
+        {
+            logger.trace( "{} exists in fileSystem {}, fileType: {}", path, fileSystem, ret );
+        }
+        else
+        {
+            logger.trace( "{} not exists in fileSystem {}", path, fileSystem );
+        }
+        return ret;
+    }
+
+    private FileType getFileTypeOrNull( ResultSet result )
+    {
+        Row row = result.one();
+        if ( row != null )
+        {
+            String f = row.get( 0, String.class );
+            FileType ret;
+            if ( f.endsWith( "/" ) )
+            {
+                ret = dir;
+            }
+            else
+            {
+                ret = file;
+            }
+            return ret;
+        }
+        return null;
     }
 
     @Override
@@ -467,24 +495,19 @@ public class CassandraPathDB
         logger.debug( "Insert finished: {}", pathMap.getFilename() );
     }
 
-    /**
-     * There is a short cut mainly due to performance consideration. If path ends with /, it is safe to assume it is directory.
-     * The general use case is caller to recursively list a dir and for all sub-folders we return a name with slash.
-     */
     @Override
     public boolean isDirectory( String fileSystem, String path )
     {
-        if ( path.endsWith( "/" ) )
+        if ( !path.endsWith( "/" ) )
         {
-            return true;
+            path += "/";
         }
         String parentPath = PathMapUtils.getParentPath( path );
-        String filename = PathMapUtils.getFilename( path ) + "/";
+        String filename = PathMapUtils.getFilename( path );
 
         BoundStatement bound = preparedExistQuery.bind( fileSystem, parentPath, Arrays.asList( filename ) );
         ResultSet result = session.execute( bound );
-        long count = result.one().get( 0, Long.class );
-        return count > 0;
+        return notNull( result );
     }
 
     @Override
@@ -499,8 +522,12 @@ public class CassandraPathDB
 
         BoundStatement bound = preparedExistQuery.bind( fileSystem, parentPath, Arrays.asList( filename ) );
         ResultSet result = session.execute( bound );
-        long count = result.one().get( 0, Long.class );
-        return count > 0;
+        return notNull( result );
+    }
+
+    private boolean notNull( ResultSet result )
+    {
+        return result.one() != null;
     }
 
     @Override
@@ -629,8 +656,7 @@ public class CassandraPathDB
 
         BoundStatement bound = preparedExistQuery.bind( fileSystem, parentPath, Arrays.asList( filename ) );
         ResultSet result = session.execute( bound );
-        long count = result.one().get( 0, Long.class );
-        if ( count > 0 )
+        if ( notNull( result ) )
         {
             logger.debug( "Dir already exists, fileSystem: {}, path: {}", fileSystem, path );
             return;

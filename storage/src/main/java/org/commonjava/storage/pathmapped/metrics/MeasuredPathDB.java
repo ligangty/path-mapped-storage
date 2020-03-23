@@ -115,12 +115,6 @@ public class MeasuredPathDB
     }
 
     @Override
-    public Set<String> getFileSystemContainingDirectory( Collection<String> candidates, String path )
-    {
-        return measure( () -> decorated.getFileSystemContainingDirectory( candidates, path ), "getFileSystemContainingDirectory" );
-    }
-
-    @Override
     public String getStorageFile( String fileSystem, String path )
     {
         return measure( () -> decorated.getStorageFile( fileSystem, path ), "getStorageFile" );

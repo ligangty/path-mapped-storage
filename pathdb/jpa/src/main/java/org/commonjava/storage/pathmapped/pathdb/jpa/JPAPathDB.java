@@ -383,12 +383,6 @@ public class JPAPathDB
         return null;
     }
 
-    @Override
-    public Set<String> getFileSystemContainingDirectory( Collection<String> candidates, String path )
-    {
-        return null;
-    }
-
     private JpaPathKey getPathKey( String fileSystem, String path )
     {
         String parentPath = PathMapUtils.getParentPath( path );

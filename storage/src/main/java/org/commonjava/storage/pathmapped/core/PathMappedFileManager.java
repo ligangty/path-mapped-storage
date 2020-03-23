@@ -81,7 +81,11 @@ public class PathMappedFileManager implements Closeable
 
     public Set<String> getFileSystemContainingDirectory( Collection<String> candidates, String path )
     {
-        return pathDB.getFileSystemContainingDirectory( candidates, path );
+        if ( !path.endsWith( "/" ) )
+        {
+            path += "/";
+        }
+        return pathDB.getFileSystemContaining( candidates, path );
     }
 
     public Set<String> getFileSystemContaining( Collection<String> candidates, String path )

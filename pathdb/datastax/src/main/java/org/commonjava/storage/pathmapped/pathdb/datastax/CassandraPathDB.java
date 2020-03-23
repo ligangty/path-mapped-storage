@@ -25,7 +25,6 @@ import com.datastax.driver.mapping.Mapper;
 import com.datastax.driver.mapping.MappingManager;
 import com.datastax.driver.mapping.Result;
 
-import com.google.common.collect.Lists;
 import com.google.common.collect.TreeTraverser;
 import org.commonjava.storage.pathmapped.pathdb.datastax.model.DtxFileChecksum;
 import org.commonjava.storage.pathmapped.pathdb.datastax.model.DtxPathMap;
@@ -68,8 +67,6 @@ public class CassandraPathDB
                 implements PathDB, Closeable
 {
     private final Logger logger = LoggerFactory.getLogger( getClass() );
-
-    private static int DEFAULT_GET_FIRST_BATCH_SIZE = 1000;
 
     private Session session;
 
@@ -178,16 +175,6 @@ public class CassandraPathDB
         return result.all().stream().map( row -> row.get( 0, String.class ) ).collect( Collectors.toSet() );
     }
 
-    @Override
-    public Set<String> getFileSystemContainingDirectory( Collection<String> candidates, String path )
-    {
-        if ( !path.endsWith( "/" ) )
-        {
-            path += "/";
-        }
-        return getFileSystemContaining( candidates, path );
-    }
-
     /**
      * Get the first fileSystem in the candidates containing the path.
      *
@@ -198,18 +185,14 @@ public class CassandraPathDB
     public String getFirstFileSystemContaining( List<String> candidates, String path )
     {
         logger.debug( "Get first fileSystem containing path {}, candidates: {}", path, candidates );
-        List<List<String>> batches = Lists.partition( candidates, DEFAULT_GET_FIRST_BATCH_SIZE );
-        for ( List<String> batch : batches )
+        Set<String> ret = getFileSystemContaining( candidates, path );
+        if ( !ret.isEmpty() )
         {
-            Set<String> ret = getFileSystemContaining( batch, path );
-            if ( !ret.isEmpty() )
+            for ( String candidate : candidates )
             {
-                for ( String candidate : batch )
+                if ( ret.contains( candidate ) )
                 {
-                    if ( ret.contains( candidate ) )
-                    {
-                        return candidate;
-                    }
+                    return candidate;
                 }
             }
         }

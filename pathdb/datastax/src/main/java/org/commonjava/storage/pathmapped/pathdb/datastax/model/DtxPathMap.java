@@ -24,7 +24,7 @@ import org.commonjava.storage.pathmapped.model.PathMap;
 import java.util.Date;
 import java.util.Objects;
 
-@Table( name = "pathmap", readConsistency = "QUORUM", writeConsistency = "QUORUM" )
+@Table( name = "pathmap", readConsistency = "QUORUM", writeConsistency = "ALL" )
 public class DtxPathMap implements PathMap
 {
     @PartitionKey(0)

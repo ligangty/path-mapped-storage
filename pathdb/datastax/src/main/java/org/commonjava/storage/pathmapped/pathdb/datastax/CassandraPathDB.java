@@ -17,6 +17,7 @@ package org.commonjava.storage.pathmapped.pathdb.datastax;
 
 import com.datastax.driver.core.BoundStatement;
 import com.datastax.driver.core.Cluster;
+import com.datastax.driver.core.ConsistencyLevel;
 import com.datastax.driver.core.PreparedStatement;
 import com.datastax.driver.core.ResultSet;
 import com.datastax.driver.core.Row;
@@ -470,7 +471,7 @@ public class CassandraPathDB
             }
         }
 
-        pathMapMapper.save( (DtxPathMap) pathMap );
+        pathMapMapper.save( (DtxPathMap) pathMap, Mapper.Option.consistencyLevel( ConsistencyLevel.ALL ) );
 
         // insert reverse mapping and path table
         addToReverseMap( pathMap.getFileId(), PathMapUtils.marshall( fileSystem, path ) );

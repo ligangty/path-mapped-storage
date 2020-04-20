@@ -249,6 +249,9 @@ public class PathMappedFileManager implements Closeable
 
         if ( commonFileExtensions != null && path.matches( commonFileExtensions ) )
         {
+            // we used to check the physical file during exist check. Here we ignore it because pathDB should be the
+            // only source-of-truth. If pathDB entry exists but physical file missing, that is a bug and IOException is thrown.
+            // we will run this code to see if any problem. ruhan Apr 20, 2020
             return pathDB.existsFile( fileSystem, path );
         }
 

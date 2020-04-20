@@ -562,7 +562,11 @@ public class CassandraPathDB
     private void addToReverseMap( String fileId, String path )
     {
         logger.debug( "Add to reverseMap, fileId: {}, path: {}", fileId, path );
-        session.execute( "UPDATE " + keyspace + ".reversemap SET paths = paths + {'" + path + "'} WHERE fileid=?;", fileId );
+        PreparedStatement prepared = session.prepare(
+                        "UPDATE " + keyspace + ".reversemap SET paths = paths + {'" + path + "'} WHERE fileid=?;" );
+        prepared.setConsistencyLevel( ConsistencyLevel.ONE );
+        BoundStatement bound = prepared.bind( fileId );
+        session.execute( bound );
     }
 
     private void reclaim( String fileId, String fileStorage, String checksum )

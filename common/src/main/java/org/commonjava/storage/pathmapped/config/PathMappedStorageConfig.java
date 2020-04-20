@@ -29,4 +29,6 @@ public interface PathMappedStorageConfig
     Object getProperty( String key );
 
     int getGCBatchSize();
+
+    String getCommonFileExtensions();
 }

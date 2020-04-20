@@ -52,6 +52,8 @@ public class PathMappedFileManager implements Closeable
 
     private final PathMappedStorageConfig config;
 
+    private final String commonFileExtensions;
+
     private ScheduledExecutorService gcThreadPool;
 
     private String deduplicatePattern;
@@ -77,6 +79,8 @@ public class PathMappedFileManager implements Closeable
         }
 
         deduplicatePattern = config.getDeduplicatePattern();
+
+        commonFileExtensions = config.getCommonFileExtensions();
     }
 
     public Set<String> getFileSystemContainingDirectory( Collection<String> candidates, String path )
@@ -242,6 +246,12 @@ public class PathMappedFileManager implements Closeable
         {
             return false;
         }
+
+        if ( commonFileExtensions != null && path.matches( commonFileExtensions ) )
+        {
+            return pathDB.existsFile( fileSystem, path );
+        }
+
         PathDB.FileType exist = pathDB.exists( fileSystem, path );
         if ( exist != null )
         {

@@ -37,6 +37,7 @@ import java.util.concurrent.TimeUnit;
 
 import static java.lang.Thread.sleep;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
 public class SimpleIOTest
@@ -60,6 +61,22 @@ public class SimpleIOTest
             String result = new String( IOUtils.toByteArray( is ), Charset.defaultCharset() );
             Assert.assertThat( result, CoreMatchers.equalTo( simpleContent ) );
         }
+    }
+
+    @Test
+    public void commonFileExtensionTest()
+                    throws Exception
+    {
+        String gzFile = "/foo/bar/1.0/bar-1.0.tar.gz"; // .gz is in common file extension
+        try (OutputStream os = fileManager.openOutputStream( TEST_FS, gzFile ))
+        {
+            Assert.assertNotNull( os );
+            IOUtils.write( simpleContent.getBytes(), os );
+        }
+        assertTrue( fileManager.exists( TEST_FS, gzFile ) );
+
+        String notExistsFile = "/foo/bar/2.0/bar-2.0.tar.gz";
+        assertFalse( fileManager.exists( TEST_FS, notExistsFile ) );
     }
 
     @Test

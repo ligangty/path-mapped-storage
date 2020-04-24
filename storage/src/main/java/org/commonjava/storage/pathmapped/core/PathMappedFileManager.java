@@ -247,25 +247,30 @@ public class PathMappedFileManager implements Closeable
             return false;
         }
 
-        // we used to check the physical file during exist check. Here we ignore it because pathDB should be the
-        // only source-of-truth. If pathDB entry exists but physical file missing, that is a bug and IOException is thrown.
-        // we will run this code to see if any problem. ruhan Apr 20, 2020
+        boolean exists = false;
 
         if ( commonFileExtensions != null && path.matches( commonFileExtensions ) )
         {
-            return pathDB.existsFile( fileSystem, path );
+            // query file
+            exists = pathDB.existsFile( fileSystem, path );
         }
-
-        PathDB.FileType exist = pathDB.exists( fileSystem, path );
-        if ( exist != null )
+        else
         {
-            return true;
-/*
-            if ( exist == PathDB.FileType.dir )
+            // query both file and dir
+            PathDB.FileType type = pathDB.exists( fileSystem, path );
+            if ( type != null )
+            {
+                exists = true;
+            }
+            if ( type == PathDB.FileType.dir )
             {
                 return true;
             }
-            // check physical file
+        }
+
+        if ( exists )
+        {
+            // check expiration and physical file
             String storageFile = pathDB.getStorageFile( fileSystem, path );
             if ( storageFile != null )
             {
@@ -275,12 +280,11 @@ public class PathMappedFileManager implements Closeable
                 }
                 else
                 {
-                    logger.warn( "File in pathDB but physical file missing!, fileSystem: {}, path: {}, storageFile: {}",
+                    logger.error( "File in pathDB but physical file missing! fileSystem: {}, path: {}, storageFile: {}",
                                  fileSystem, path, storageFile );
                     return false;
                 }
             }
-*/
         }
         return false;
     }

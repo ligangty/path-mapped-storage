@@ -270,10 +270,15 @@ public class PathMappedFileManager implements Closeable
 
         if ( exists )
         {
-            // check expiration and physical file
+            // check expiration
             String storageFile = pathDB.getStorageFile( fileSystem, path );
             if ( storageFile != null )
             {
+                return true;
+                // we used to check the physical file during exist check. Here we ignore it because pathDB should be the
+                // only source-of-truth. If pathDB entry exists but physical file missing, that is a bug and IOException is thrown.
+                // we will run this code to see if any problem. ruhan Apr 20, 2020
+/*
                 if ( physicalStore.exists( storageFile ) )
                 {
                     return true;
@@ -284,6 +289,7 @@ public class PathMappedFileManager implements Closeable
                                  fileSystem, path, storageFile );
                     return false;
                 }
+*/
             }
         }
         return false;

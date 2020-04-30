@@ -38,6 +38,10 @@ public class DefaultPathMappedStorageConfig
 
     private String deduplicatePattern;
 
+    private static final String DEFAULT_COMMON_FILE_EXTENSIONS = ".+\\.(jar|xml|pom|gz|md5|sha1|sha256)$";
+
+    private String commonFileExtensions = DEFAULT_COMMON_FILE_EXTENSIONS;
+
     public DefaultPathMappedStorageConfig()
     {
     }
@@ -112,5 +116,16 @@ public class DefaultPathMappedStorageConfig
     public void setDeduplicatePattern( String deduplicatePattern )
     {
         this.deduplicatePattern = deduplicatePattern;
+    }
+
+    @Override
+    public String getCommonFileExtensions()
+    {
+        return commonFileExtensions;
+    }
+
+    public void setCommonFileExtensions( String commonFileExtensions )
+    {
+        this.commonFileExtensions = commonFileExtensions;
     }
 }

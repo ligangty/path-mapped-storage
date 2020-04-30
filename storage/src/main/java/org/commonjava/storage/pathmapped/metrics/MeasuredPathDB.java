@@ -78,6 +78,12 @@ public class MeasuredPathDB
     }
 
     @Override
+    public boolean existsFile( String fileSystem, String path )
+    {
+        return measure( () -> decorated.existsFile( fileSystem, path ), "existsFile" );
+    }
+
+    @Override
     public void insert( String fileSystem, String path, Date creation, Date expiration, String fileId, long size, String fileStorage,
                         String checksum )
     {

@@ -52,6 +52,8 @@ public class PathMappedFileManager implements Closeable
 
     private final PathMappedStorageConfig config;
 
+    private final String commonFileExtensions;
+
     private ScheduledExecutorService gcThreadPool;
 
     private String deduplicatePattern;
@@ -77,6 +79,8 @@ public class PathMappedFileManager implements Closeable
         }
 
         deduplicatePattern = config.getDeduplicatePattern();
+
+        commonFileExtensions = config.getCommonFileExtensions();
     }
 
     public Set<String> getFileSystemContainingDirectory( Collection<String> candidates, String path )
@@ -242,27 +246,50 @@ public class PathMappedFileManager implements Closeable
         {
             return false;
         }
-        PathDB.FileType exist = pathDB.exists( fileSystem, path );
-        if ( exist != null )
+
+        boolean exists = false;
+
+        if ( commonFileExtensions != null && path.matches( commonFileExtensions ) )
         {
-            if ( exist == PathDB.FileType.dir )
+            // query file
+            exists = pathDB.existsFile( fileSystem, path );
+        }
+        else
+        {
+            // query both file and dir
+            PathDB.FileType type = pathDB.exists( fileSystem, path );
+            if ( type != null )
+            {
+                exists = true;
+            }
+            if ( type == PathDB.FileType.dir )
             {
                 return true;
             }
-            // check physical file
+        }
+
+        if ( exists )
+        {
+            // check expiration
             String storageFile = pathDB.getStorageFile( fileSystem, path );
             if ( storageFile != null )
             {
+                return true;
+                // we used to check the physical file during exist check. Here we ignore it because pathDB should be the
+                // only source-of-truth. If pathDB entry exists but physical file missing, that is a bug and IOException is thrown.
+                // we will run this code to see if any problem. ruhan Apr 20, 2020
+/*
                 if ( physicalStore.exists( storageFile ) )
                 {
                     return true;
                 }
                 else
                 {
-                    logger.warn( "File in pathDB but physical file missing!, fileSystem: {}, path: {}, storageFile: {}",
+                    logger.error( "File in pathDB but physical file missing! fileSystem: {}, path: {}, storageFile: {}",
                                  fileSystem, path, storageFile );
                     return false;
                 }
+*/
             }
         }
         return false;

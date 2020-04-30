@@ -85,7 +85,7 @@ public class CassandraPathDB
 
     private final String keyspace;
 
-    private PreparedStatement preparedExistQuery, preparedListQuery, preparedContainingQuery;
+    private PreparedStatement preparedExistQuery, preparedListQuery, preparedContainingQuery, preparedExistFileQuery;
 
     public CassandraPathDB( PathMappedStorageConfig config, Session session, String keyspace )
     {
@@ -133,6 +133,9 @@ public class CassandraPathDB
         reverseMapMapper = manager.mapper( DtxReverseMap.class, keyspace );
         reclaimMapper = manager.mapper( DtxReclaim.class, keyspace );
         fileChecksumMapper = manager.mapper( DtxFileChecksum.class, keyspace );
+
+        preparedExistFileQuery = session.prepare( "SELECT count(*) FROM " + keyspace
+                                                                  + ".pathmap WHERE filesystem=? and parentpath=? and filename=?;" );
 
         preparedExistQuery = session.prepare( "SELECT filename FROM " + keyspace
                                                               + ".pathmap WHERE filesystem=? and parentpath=? and filename IN ? LIMIT 1;" );
@@ -388,6 +391,25 @@ public class CassandraPathDB
             logger.trace( "{} not exists in fileSystem {}", path, fileSystem );
         }
         return ret;
+    }
+
+    @Override
+    public boolean existsFile( String fileSystem, String path )
+    {
+        String parentPath = PathMapUtils.getParentPath( path );
+        String filename = PathMapUtils.getFilename( path );
+
+        BoundStatement bound = preparedExistFileQuery.bind( fileSystem, parentPath, filename );
+        ResultSet result = session.execute( bound );
+        Row row = result.one();
+        boolean exists = false;
+        if ( row != null )
+        {
+            long count = row.get( 0, Long.class );
+            exists = count > 0;
+        }
+        logger.trace( "File {} {} in fileSystem {}", path, ( exists ? "exists" : "not exists" ), fileSystem );
+        return exists;
     }
 
     private FileType getFileTypeOrNull( ResultSet result )

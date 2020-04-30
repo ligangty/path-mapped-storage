@@ -120,6 +120,12 @@ public class JPAPathDB
     }
 
     @Override
+    public boolean existsFile( String fileSystem, String path )
+    {
+        return exists( fileSystem, path ) != null;
+    }
+
+    @Override
     public void insert( String fileSystem, String path, Date creation, Date expiration, String fileId, long size, String fileStorage, String checksum )
     {
         JpaPathMap pathMap = new JpaPathMap();

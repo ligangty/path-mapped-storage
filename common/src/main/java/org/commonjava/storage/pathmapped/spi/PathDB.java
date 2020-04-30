@@ -39,6 +39,8 @@ public interface PathDB
 
     FileType exists( String fileSystem, String path );
 
+    boolean existsFile( String fileSystem, String path );
+
     void insert( String fileSystem, String path, Date creation, Date expiration, String fileId, long size, String fileStorage, String checksum );
 
     boolean isDirectory( String fileSystem, String path );

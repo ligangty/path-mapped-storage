@@ -22,6 +22,7 @@ import java.util.Collection;
 import java.util.Date;
 import java.util.List;
 import java.util.Set;
+import java.util.function.Consumer;
 
 public interface PathDB
 {
@@ -64,4 +65,14 @@ public interface PathDB
     Set<String> getFileSystemContaining( Collection<String> candidates, String path );
 
     String getFirstFileSystemContaining( List<String> candidates, String path );
+
+    /**
+     * Traverse a file system starting from the specified path
+     * @param fileSystem
+     * @param path starting path, e.g, "/"
+     * @param consumer
+     * @param limit return no more than limited paths. no limit if limit <= 0
+     * @param fileType file, dir, or all
+     */
+    void traverse( String fileSystem, String path, Consumer<PathMap> consumer, int limit, FileType fileType );
 }

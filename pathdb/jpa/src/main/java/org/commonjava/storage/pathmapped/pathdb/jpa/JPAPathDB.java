@@ -39,6 +39,7 @@ import java.util.Date;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.function.Consumer;
 
 public class JPAPathDB
                 implements PathDB
@@ -387,6 +388,11 @@ public class JPAPathDB
     public String getFirstFileSystemContaining( List<String> candidates, String path )
     {
         return null;
+    }
+
+    @Override
+    public void traverse( String fileSystem, String path, Consumer<PathMap> consumer, int limit, FileType fileType )
+    {
     }
 
     private JpaPathKey getPathKey( String fileSystem, String path )

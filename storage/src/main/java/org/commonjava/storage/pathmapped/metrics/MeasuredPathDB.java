@@ -28,6 +28,7 @@ import java.util.Date;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.Callable;
+import java.util.function.Consumer;
 
 import static com.codahale.metrics.MetricRegistry.name;
 
@@ -118,6 +119,12 @@ public class MeasuredPathDB
     public String getFirstFileSystemContaining( List<String> candidates, String path )
     {
         return measure( () -> decorated.getFirstFileSystemContaining( candidates, path ), "getFirstFileSystemContaining" );
+    }
+
+    @Override
+    public void traverse( String fileSystem, String path, Consumer<PathMap> consumer, int limit, FileType fileType )
+    {
+        measure( () -> decorated.traverse( fileSystem, path, consumer, limit, fileType ), "traverse" );
     }
 
     @Override

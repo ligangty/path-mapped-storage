@@ -239,8 +239,8 @@ public class CassandraPathDB
 
     private final static DtxPathMap FAKE_ROOT_OBJ = new DtxPathMap(); // if path is ROOT_DIR, use a FAKE_ROOT_OBJ
 
-    // To avoid listing huge file system and OOM we throw exception when the results exceeds limit
-    private void traverse( String fileSystem, String path, Consumer<PathMap> consumer, int limit, FileType fileType )
+    @Override
+    public void traverse( String fileSystem, String path, Consumer<PathMap> consumer, int limit, FileType fileType )
     {
         logger.debug( "Traverse fileSystem: {}, path: {}", fileSystem, path );
 

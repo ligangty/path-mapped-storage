@@ -366,6 +366,11 @@ public class PathMappedFileManager implements Closeable
         return gcResults;
     }
 
+    public PathDB getPathDB()
+    {
+        return pathDB;
+    }
+
     @Override
     public void close() throws IOException
     {

@@ -15,6 +15,9 @@
  */
 package org.commonjava.storage.pathmapped;
 
+import org.commonjava.storage.pathmapped.pathdb.datastax.model.DtxPathMap;
+import org.commonjava.storage.pathmapped.pathdb.datastax.model.DtxReverseMap;
+import org.commonjava.storage.pathmapped.util.PathMapUtils;
 import org.junit.Test;
 
 import java.io.IOException;
@@ -22,6 +25,8 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Set;
 
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 
 public class QueryByPathTest
@@ -56,6 +61,17 @@ public class QueryByPathTest
         assertTrue( ret.size() == 2 );
         assertTrue( ret.containsAll( Arrays.asList( repo1, repo2 ) ) );
 
+        // check the reverse mapping for repo1/path1
+        String parentPath = PathMapUtils.getParentPath( path1 );
+        String filename = PathMapUtils.getFilename( path1 );
+        DtxPathMap pathMap = pathMapMapper.get( repo1, parentPath, filename );
+        String fileId = pathMap.getFileId();
+        DtxReverseMap reverseMap = reverseMapMapper.get( fileId );
+        assertNotNull( reverseMap );
+        ret = reverseMap.getPaths();
+        System.out.println(">>> " + ret );
+        assertTrue( ret.contains( repo1 + ":" + path1 ) );
+
         // delete one path
         fileManager.delete( repo1, path1 );
 
@@ -69,6 +85,10 @@ public class QueryByPathTest
         System.out.println( ">>> " + ret );
         //assertTrue( ret.size() == 1 ); // although file deleted, dirs remain in DB (not perfect but no problem)
         assertTrue( ret.contains( repo2 ) );
+
+        // check the reverse mapping is null
+        reverseMap = reverseMapMapper.get( fileId );
+        assertNull( reverseMap );
     }
 
     @Test
@@ -108,6 +128,16 @@ public class QueryByPathTest
         System.out.println( ">>> " + ret );
         assertTrue( ret.size() == 2 );
         assertTrue( ret.containsAll( Arrays.asList( repo1, repo2 ) ) );
+
+        // check the reverse mapping paths contain both repo1 and repo2
+        String parentPath = PathMapUtils.getParentPath( path1 );
+        String filename = PathMapUtils.getFilename( path1 );
+        DtxPathMap pathMap = pathMapMapper.get( from, parentPath, filename );
+        DtxReverseMap reverseMap = reverseMapMapper.get( pathMap.getFileId() );
+        ret = reverseMap.getPaths();
+        System.out.println(">>> " + ret );
+        assertTrue( ret.contains( repo1 + ":" + path1 ) );
+        assertTrue( ret.contains( repo2 + ":" + path1 ) );
     }
 
 }

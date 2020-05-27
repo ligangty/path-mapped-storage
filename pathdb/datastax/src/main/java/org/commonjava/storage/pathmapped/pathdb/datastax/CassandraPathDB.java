@@ -49,6 +49,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Date;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -85,7 +86,8 @@ public class CassandraPathDB
 
     private final String keyspace;
 
-    private PreparedStatement preparedExistQuery, preparedListQuery, preparedContainingQuery, preparedExistFileQuery;
+    private PreparedStatement preparedExistQuery, preparedListQuery, preparedContainingQuery, preparedExistFileQuery,
+                    preparedReverseMapIncrement, preparedReverseMapReduction;
 
     public CassandraPathDB( PathMappedStorageConfig config, Session session, String keyspace )
     {
@@ -145,6 +147,14 @@ public class CassandraPathDB
 
         preparedContainingQuery = session.prepare( "SELECT filesystem FROM " + keyspace
                                                                    + ".pathmap WHERE filesystem IN ? and parentpath=? and filename=?;" );
+
+        preparedReverseMapIncrement =
+                        session.prepare( "UPDATE " + keyspace + ".reversemap SET paths = paths + ? WHERE fileid=?;" );
+        preparedReverseMapIncrement.setConsistencyLevel( ConsistencyLevel.ONE );
+
+        preparedReverseMapReduction =
+                        session.prepare( "UPDATE " + keyspace + ".reversemap SET paths = paths - ? WHERE fileid=?;" );
+        preparedReverseMapReduction.setConsistencyLevel( ConsistencyLevel.ONE );
     }
 
     @Override
@@ -573,21 +583,26 @@ public class CassandraPathDB
         return true;
     }
 
-    // We have to use non-prepared statement because bind variables are not supported inside collections
     private ReverseMap deleteFromReverseMap( String fileId, String path )
     {
         logger.debug( "Delete from reverseMap, fileId: {}, path: {}", fileId, path );
-        session.execute( "UPDATE " + keyspace + ".reversemap SET paths = paths - {'" + path + "'} WHERE fileid=?;", fileId );
+        BoundStatement bound = preparedReverseMapReduction.bind();
+        Set<String> reduction = new HashSet();
+        reduction.add( path );
+        bound.setSet( 0, reduction );
+        bound.setString( 1, fileId );
+        session.execute( bound );
         return reverseMapMapper.get( fileId );
     }
 
     private void addToReverseMap( String fileId, String path )
     {
         logger.debug( "Add to reverseMap, fileId: {}, path: {}", fileId, path );
-        PreparedStatement prepared = session.prepare(
-                        "UPDATE " + keyspace + ".reversemap SET paths = paths + {'" + path + "'} WHERE fileid=?;" );
-        prepared.setConsistencyLevel( ConsistencyLevel.ONE );
-        BoundStatement bound = prepared.bind( fileId );
+        BoundStatement bound = preparedReverseMapIncrement.bind();
+        Set<String> increment = new HashSet();
+        increment.add( path );
+        bound.setSet( 0, increment );
+        bound.setString( 1, fileId );
         session.execute( bound );
     }
 

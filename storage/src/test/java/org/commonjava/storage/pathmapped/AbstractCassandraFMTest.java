@@ -16,12 +16,16 @@
 package org.commonjava.storage.pathmapped;
 
 import com.datastax.driver.core.Session;
+import com.datastax.driver.mapping.Mapper;
+import com.datastax.driver.mapping.MappingManager;
 import org.apache.commons.io.IOUtils;
 import org.cassandraunit.utils.EmbeddedCassandraServerHelper;
 import org.commonjava.storage.pathmapped.config.DefaultPathMappedStorageConfig;
 import org.commonjava.storage.pathmapped.core.FileBasedPhysicalStore;
 import org.commonjava.storage.pathmapped.core.PathMappedFileManager;
 import org.commonjava.storage.pathmapped.pathdb.datastax.CassandraPathDB;
+import org.commonjava.storage.pathmapped.pathdb.datastax.model.DtxPathMap;
+import org.commonjava.storage.pathmapped.pathdb.datastax.model.DtxReverseMap;
 import org.commonjava.storage.pathmapped.spi.FileInfo;
 import org.junit.After;
 import org.junit.AfterClass;
@@ -59,6 +63,12 @@ public abstract class AbstractCassandraFMTest
     public TestName name = new TestName();
 
     private static CassandraPathDB pathDB;
+
+    Session session;
+
+    Mapper<DtxPathMap> pathMapMapper;
+
+    Mapper<DtxReverseMap> reverseMapMapper;
 
     PathMappedFileManager fileManager;
 
@@ -109,7 +119,6 @@ public abstract class AbstractCassandraFMTest
         config.setGcGracePeriodInHours( 0 );
         config.setDeduplicatePattern( "^(generic|npm|test).*" );
         pathDB = new CassandraPathDB( config );
-
     }
 
     @AfterClass
@@ -134,6 +143,10 @@ public abstract class AbstractCassandraFMTest
         baseStoragePath = baseDir.getCanonicalPath();
         fileManager = new PathMappedFileManager( config, pathDB,
                                                  new FileBasedPhysicalStore( baseDir ) );
+        session = pathDB.getSession();
+        MappingManager manager = new MappingManager( session );
+        pathMapMapper = manager.mapper( DtxPathMap.class, KEYSPACE );
+        reverseMapMapper = manager.mapper( DtxReverseMap.class, KEYSPACE );
     }
 
     @After
@@ -146,7 +159,8 @@ public abstract class AbstractCassandraFMTest
 
     private void cleanAllData()
     {
-        if(pathDB!=null){
+        if ( pathDB != null )
+        {
             Session session = pathDB.getSession();
             session.execute( "TRUNCATE " + KEYSPACE + ".pathmap;" );
             session.execute( "TRUNCATE " + KEYSPACE + ".reversemap;" );

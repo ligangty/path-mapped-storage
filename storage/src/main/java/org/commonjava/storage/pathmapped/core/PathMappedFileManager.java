@@ -25,6 +25,7 @@ import org.commonjava.storage.pathmapped.spi.PhysicalStore;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.BufferedOutputStream;
 import java.io.Closeable;
 import java.io.IOException;
 import java.io.InputStream;
@@ -135,10 +136,11 @@ public class PathMappedFileManager implements Closeable
         }
         try
         {
-            return new PathDBOutputStream( pathDB, physicalStore, fileSystem, path, fileInfo,
+            return new BufferedOutputStream( new PathDBOutputStream( pathDB, physicalStore,
+                                           fileSystem, path, fileInfo,
                                            physicalStore.getOutputStream( fileInfo ),
                                            checksumAlgorithm,
-                                           timeoutUnit.toMillis( timeout ));
+                                           timeoutUnit.toMillis( timeout )) );
         }
         catch ( NoSuchAlgorithmException e )
         {

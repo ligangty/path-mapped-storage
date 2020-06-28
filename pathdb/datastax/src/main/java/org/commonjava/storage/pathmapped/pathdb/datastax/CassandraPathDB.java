@@ -58,6 +58,8 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
+import static com.datastax.driver.core.ConsistencyLevel.ONE;
+import static com.datastax.driver.core.ConsistencyLevel.QUORUM;
 import static java.util.Collections.emptySet;
 import static org.apache.commons.lang.StringUtils.isNotBlank;
 import static org.commonjava.storage.pathmapped.spi.PathDB.FileType.all;
@@ -138,9 +140,11 @@ public class CassandraPathDB
 
         preparedExistFileQuery = session.prepare( "SELECT count(*) FROM " + keyspace
                                                                   + ".pathmap WHERE filesystem=? and parentpath=? and filename=?;" );
+        preparedExistFileQuery.setConsistencyLevel( QUORUM );
 
         preparedExistQuery = session.prepare( "SELECT filename FROM " + keyspace
                                                               + ".pathmap WHERE filesystem=? and parentpath=? and filename IN ? LIMIT 1;" );
+        preparedExistQuery.setConsistencyLevel( QUORUM );
 
         preparedListQuery =
                         session.prepare( "SELECT * FROM " + keyspace + ".pathmap WHERE filesystem=? and parentpath=?;" );
@@ -150,11 +154,11 @@ public class CassandraPathDB
 
         preparedReverseMapIncrement =
                         session.prepare( "UPDATE " + keyspace + ".reversemap SET paths = paths + ? WHERE fileid=?;" );
-        preparedReverseMapIncrement.setConsistencyLevel( ConsistencyLevel.ONE );
+        preparedReverseMapIncrement.setConsistencyLevel( ONE );
 
         preparedReverseMapReduction =
                         session.prepare( "UPDATE " + keyspace + ".reversemap SET paths = paths - ? WHERE fileid=?;" );
-        preparedReverseMapReduction.setConsistencyLevel( ConsistencyLevel.ONE );
+        preparedReverseMapReduction.setConsistencyLevel( ONE );
     }
 
     @Override

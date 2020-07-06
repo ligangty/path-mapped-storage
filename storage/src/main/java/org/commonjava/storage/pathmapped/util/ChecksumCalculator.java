@@ -17,6 +17,9 @@ package org.commonjava.storage.pathmapped.util;
 
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
+import java.security.Provider;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import static org.apache.commons.codec.binary.Hex.encodeHexString;
 
@@ -26,10 +29,20 @@ public class ChecksumCalculator
 
     private String digestHex;
 
+    private static Provider provider;
+
     public ChecksumCalculator( final String algorithm )
             throws NoSuchAlgorithmException
     {
-        this.digester = MessageDigest.getInstance( algorithm );
+        if (provider == null)
+        {
+            this.digester = MessageDigest.getInstance( algorithm );
+            this.provider = this.digester.getProvider();
+        }
+        else
+        {
+            this.digester = MessageDigest.getInstance( algorithm, this.provider );
+        }
     }
 
     public final void update( final byte[] data )
@@ -40,6 +53,11 @@ public class ChecksumCalculator
     public final void update( final byte data )
     {
         digester.update( data );
+    }
+
+    public final void update( final byte[] data, final int offset, final int len )
+    {
+        digester.update( data, offset, len );
     }
 
     public synchronized String getDigestHex()

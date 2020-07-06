@@ -20,9 +20,12 @@ import org.apache.commons.lang.reflect.FieldUtils;
 import org.junit.Assert;
 import org.junit.Test;
 
+import java.io.BufferedOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+
+import org.commonjava.storage.pathmapped.core.PathDBOutputStream;
 
 import static junit.framework.TestCase.fail;
 
@@ -40,9 +43,13 @@ public class ErrorIOTest
     {
         try (OutputStream os = fileManager.openOutputStream( TEST_FS, errPath ))
         {
-            Assert.assertNotNull( os );
-            IOUtils.write( simpleContent.getBytes(), os );
-            FieldUtils.writeField( os, "error", new IOException(), true );
+            Object obj = FieldUtils.readField ( os, "out", true );
+            Assert.assertNotNull( obj );
+            Assert.assertTrue ( obj instanceof PathDBOutputStream );
+            PathDBOutputStream pathDBos = ( PathDBOutputStream) obj;
+            Assert.assertNotNull( pathDBos );
+            IOUtils.write( simpleContent.getBytes(), pathDBos );
+            FieldUtils.writeField( pathDBos, "error", new IOException(), true );
         }
 
         try

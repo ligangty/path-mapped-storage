@@ -23,14 +23,23 @@ import org.commonjava.storage.pathmapped.util.ChecksumCalculator;
 import java.io.FilterOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
+import java.io.ByteArrayOutputStream;
 import java.security.NoSuchAlgorithmException;
 import java.util.Date;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import static java.util.Objects.isNull;
 import static org.apache.commons.lang.StringUtils.isNotBlank;
 
+/**
+ * PathDB output stream that saves a record to datastore only on successful completion.
+ * This stream implementation *must* be wrapped using a BufferedOutputStream to be
+ * efficient.
+ */
 public class PathDBOutputStream
-                extends FilterOutputStream
+                extends OutputStream
 {
     private final PathDB pathDB;
 
@@ -54,11 +63,16 @@ public class PathDBOutputStream
 
     private final long timeoutInMilliseconds;
 
+    private OutputStream out;
+
+    private static final Logger logger = LoggerFactory.getLogger( PathDBOutputStream.class.getName() );
+
+    private boolean isWarned = false;
+
     PathDBOutputStream( PathDB pathDB, PhysicalStore physicalStore, String fileSystem, String path, FileInfo fileInfo,
                         OutputStream out, String checksumAlgorithm, long timeoutInMilliseconds )
             throws NoSuchAlgorithmException
     {
-        super( out );
         this.pathDB = pathDB;
         this.physicalStore = physicalStore;
         this.fileSystem = fileSystem;
@@ -66,6 +80,7 @@ public class PathDBOutputStream
         this.fileInfo = fileInfo;
         this.fileId = fileInfo.getFileId();
         this.fileStorage = fileInfo.getFileStorage();
+        this.out = out;
         if ( isNotBlank( checksumAlgorithm ) && !checksumAlgorithm.equals( "NONE" ) )
         {
             this.checksumCalculator = new ChecksumCalculator( checksumAlgorithm );
@@ -74,16 +89,16 @@ public class PathDBOutputStream
     }
 
     @Override
-    public void write( int b ) throws IOException
+    public void write ( byte[] b, int off, int len )
+            throws IOException
     {
         try
         {
-            super.write( b );
-            size += 1;
-            byte by = (byte) ( b & 0xff );
+            out.write( b, off, len );
+            size += len;
             if ( checksumCalculator != null )
             {
-                checksumCalculator.update( by );
+                checksumCalculator.update( b, off, len );
             }
         }
         catch ( IOException e )
@@ -92,6 +107,27 @@ public class PathDBOutputStream
             physicalStore.delete( fileInfo );
             error = e;
             throw e;
+        }
+    }
+
+    @Override
+    /**
+     *  Performance warning, this implementation is inefficient. Instead use
+     *  write ( byte[] b, int off, int len ) by wrapping stream with a BufferedOutputStream.
+     */
+    public void write ( int b )  throws IOException
+    {
+        size += 1;
+        byte by = (byte) ( b & 0xff );
+        out.write ( by );
+        if ( checksumCalculator != null )
+        {
+            checksumCalculator.update( by );
+        }
+        if ( !isWarned )
+        {
+            isWarned = true;
+            logger.warn("Inefficient use of write( int ) with OutputStream.");
         }
     }
 
@@ -111,6 +147,7 @@ public class PathDBOutputStream
             if ( checksumCalculator != null )
             {
                 checksum = checksumCalculator.getDigestHex();
+                logger.trace( "PathDBOutputStream: {} calculated checksum: {}", path, checksum );
             }
             pathDB.insert( fileSystem, path, creation, expiration, fileId, size, fileStorage, checksum );
         }

@@ -41,9 +41,9 @@
     <inceptionYear>2019</inceptionYear>
 
     <scm>
-        <connection>scm:git:https://github.com/commonjava/path-mapped-storage</connection>
-        <developerConnection>scm:git:https://github.com/commonjava/path-mapped-storage</developerConnection>
-        <url>https://github.com/Commonjava/path-mapped-storage</url>
+        <connection>scm:git:git@github.com:commonjava/path-mapped-storage</connection>
+        <developerConnection>scm:git:git@github.com:commonjava/path-mapped-storage</developerConnection>
+        <url>git@github.com:Commonjava/path-mapped-storage</url>
         <tag>HEAD</tag>
     </scm>
 

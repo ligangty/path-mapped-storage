@@ -15,8 +15,8 @@
  */
 package org.commonjava.storage.pathmapped.metrics;
 
-import com.codahale.metrics.MetricRegistry;
-import com.codahale.metrics.Timer;
+import org.commonjava.o11yphant.metrics.api.MetricRegistry;
+import org.commonjava.o11yphant.metrics.api.Timer;
 import org.commonjava.storage.pathmapped.model.PathMap;
 import org.commonjava.storage.pathmapped.model.Reclaim;
 import org.commonjava.storage.pathmapped.spi.PathDB;
@@ -30,7 +30,7 @@ import java.util.Set;
 import java.util.concurrent.Callable;
 import java.util.function.Consumer;
 
-import static com.codahale.metrics.MetricRegistry.name;
+import static org.commonjava.o11yphant.metrics.util.NameUtils.name;
 
 public class MeasuredPathDB
                 implements PathDB

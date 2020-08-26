@@ -15,10 +15,9 @@
  */
 package org.commonjava.storage.pathmapped;
 
-import com.codahale.metrics.ConsoleReporter;
-import com.codahale.metrics.MetricRegistry;
 import org.apache.commons.io.IOUtils;
 import org.cassandraunit.utils.EmbeddedCassandraServerHelper;
+import org.commonjava.o11yphant.metrics.DefaultMetricRegistry;
 import org.commonjava.storage.pathmapped.config.DefaultPathMappedStorageConfig;
 import org.commonjava.storage.pathmapped.core.FileBasedPhysicalStore;
 import org.commonjava.storage.pathmapped.core.PathMappedFileManager;
@@ -39,9 +38,9 @@ import java.io.OutputStream;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.concurrent.TimeUnit;
 
 import static java.lang.Thread.sleep;
+import static org.commonjava.o11yphant.metrics.util.MetricUtils.newDefaultMetricRegistry;
 import static org.commonjava.storage.pathmapped.pathdb.datastax.util.CassandraPathDBUtils.PROP_CASSANDRA_HOST;
 import static org.commonjava.storage.pathmapped.pathdb.datastax.util.CassandraPathDBUtils.PROP_CASSANDRA_KEYSPACE;
 import static org.commonjava.storage.pathmapped.pathdb.datastax.util.CassandraPathDBUtils.PROP_CASSANDRA_PORT;
@@ -75,18 +74,13 @@ public class MeasuredPathDBTest
         config.setDeduplicatePattern( "^(generic|npm|test).*" );
         PathDB pathDB = new CassandraPathDB( config );
 
-        MetricRegistry metricRegistry = new MetricRegistry();
+        DefaultMetricRegistry metricRegistry = newDefaultMetricRegistry();
         measuredPathDB = new MeasuredPathDB( pathDB, metricRegistry, "pathDB" );
 
         File baseDir = temp.newFolder();
         fileManager = new PathMappedFileManager( config, measuredPathDB, new FileBasedPhysicalStore( baseDir ) );
 
-        initConsoleReporter( metricRegistry );
-    }
-
-    private void initConsoleReporter( MetricRegistry metrics )
-    {
-        ConsoleReporter.forRegistry( metrics ).build().start( 3, TimeUnit.SECONDS );
+        metricRegistry.startConsoleReporter( 3 );
     }
 
     @After

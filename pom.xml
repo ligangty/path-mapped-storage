@@ -55,7 +55,7 @@
         <datastaxVersion>3.7.2</datastaxVersion>
         <cassandraUnitVersion>3.7.1.0</cassandraUnitVersion>
         <hibernateVersion>5.4.4.Final</hibernateVersion>
-        <metricsVersion>4.0.2</metricsVersion>
+        <o11yphantVersion>1.0-SNAPSHOT</o11yphantVersion>
         <h2Version>1.4.188</h2Version>
         <weftVersion>1.15</weftVersion>
     </properties>
@@ -101,9 +101,14 @@
                 <scope>import</scope>
             </dependency>
             <dependency>
-                <groupId>io.dropwizard.metrics</groupId>
-                <artifactId>metrics-core</artifactId>
-                <version>${metricsVersion}</version>
+                <groupId>org.commonjava.util</groupId>
+                <artifactId>o11yphant-metrics-api</artifactId>
+                <version>${o11yphantVersion}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.commonjava.util</groupId>
+                <artifactId>o11yphant-metrics-core</artifactId>
+                <version>${o11yphantVersion}</version>
             </dependency>
             <dependency>
                 <groupId>org.commonjava.cdi.util</groupId>
@@ -125,10 +130,6 @@
         <dependency>
             <groupId>commons-lang</groupId>
             <artifactId>commons-lang</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>io.dropwizard.metrics</groupId>
-            <artifactId>metrics-core</artifactId>
         </dependency>
         <dependency>
             <groupId>commons-codec</groupId>

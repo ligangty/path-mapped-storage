@@ -35,6 +35,10 @@
             <groupId>org.commonjava.cdi.util</groupId>
             <artifactId>weft</artifactId>
         </dependency>
+        <dependency>
+            <groupId>org.commonjava.util</groupId>
+            <artifactId>o11yphant-metrics-api</artifactId>
+        </dependency>
 
         <!--Test-->
         <dependency>
@@ -51,6 +55,11 @@
             <groupId>org.cassandraunit</groupId>
             <artifactId>cassandra-unit</artifactId>
             <version>${cassandraUnitVersion}</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.commonjava.util</groupId>
+            <artifactId>o11yphant-metrics-core</artifactId>
             <scope>test</scope>
         </dependency>
     </dependencies>

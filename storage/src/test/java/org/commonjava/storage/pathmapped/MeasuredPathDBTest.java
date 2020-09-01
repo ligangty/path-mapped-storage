@@ -18,6 +18,7 @@ package org.commonjava.storage.pathmapped;
 import org.apache.commons.io.IOUtils;
 import org.cassandraunit.utils.EmbeddedCassandraServerHelper;
 import org.commonjava.o11yphant.metrics.DefaultMetricRegistry;
+import org.commonjava.o11yphant.metrics.DefaultMetricsManager;
 import org.commonjava.storage.pathmapped.config.DefaultPathMappedStorageConfig;
 import org.commonjava.storage.pathmapped.core.FileBasedPhysicalStore;
 import org.commonjava.storage.pathmapped.core.PathMappedFileManager;
@@ -75,7 +76,7 @@ public class MeasuredPathDBTest
         PathDB pathDB = new CassandraPathDB( config );
 
         DefaultMetricRegistry metricRegistry = newDefaultMetricRegistry();
-        measuredPathDB = new MeasuredPathDB( pathDB, metricRegistry, "pathDB" );
+        measuredPathDB = new MeasuredPathDB( pathDB, new DefaultMetricsManager( metricRegistry ), "pathDB" );
 
         File baseDir = temp.newFolder();
         fileManager = new PathMappedFileManager( config, measuredPathDB, new FileBasedPhysicalStore( baseDir ) );

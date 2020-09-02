@@ -15,8 +15,7 @@
  */
 package org.commonjava.storage.pathmapped.metrics;
 
-import org.commonjava.o11yphant.metrics.api.MetricRegistry;
-import org.commonjava.o11yphant.metrics.api.Timer;
+import org.commonjava.o11yphant.metrics.MetricsManager;
 import org.commonjava.storage.pathmapped.model.PathMap;
 import org.commonjava.storage.pathmapped.model.Reclaim;
 import org.commonjava.storage.pathmapped.spi.PathDB;
@@ -27,8 +26,8 @@ import java.util.Collection;
 import java.util.Date;
 import java.util.List;
 import java.util.Set;
-import java.util.concurrent.Callable;
 import java.util.function.Consumer;
+import java.util.function.Supplier;
 
 import static org.commonjava.o11yphant.metrics.util.NameUtils.name;
 
@@ -37,14 +36,14 @@ public class MeasuredPathDB
 {
     private final PathDB decorated;
 
-    private final MetricRegistry metricRegistry;
+    private final MetricsManager metricsManager;
 
     private final String metricPrefix;
 
-    public MeasuredPathDB( PathDB decorated, MetricRegistry metricRegistry, String metricPrefix )
+    public MeasuredPathDB( PathDB decorated, MetricsManager metricsManager, String metricPrefix )
     {
         this.decorated = decorated;
-        this.metricRegistry = metricRegistry;
+        this.metricsManager = metricsManager;
         this.metricPrefix = metricPrefix;
     }
 
@@ -157,21 +156,14 @@ public class MeasuredPathDB
         decorated.removeFromReclaim( reclaim );
     }
 
-    private static final String TIMER = "timer";
-
     private void measure( Runnable runnable, String metricName )
     {
-        if ( metricRegistry != null && isMetricEnabled( metricName ) )
+        if ( metricsManager != null && isMetricEnabled( metricName ) )
         {
-            Timer.Context context = metricRegistry.timer( name( metricPrefix, metricName, TIMER ) ).time();
-            try
-            {
+            metricsManager.wrapWithStandardMetrics( () -> {
                 runnable.run();
-            }
-            finally
-            {
-                context.stop();
-            }
+                return null;
+            }, () -> name( metricPrefix, metricName ) );
         }
         else
         {
@@ -179,32 +171,15 @@ public class MeasuredPathDB
         }
     }
 
-    private <T> T measure( Callable<T> callable, String metricName )
+    private <T> T measure( Supplier<T> methodSupplier, String metricName )
     {
-        try
+        if ( metricsManager != null && isMetricEnabled( metricName ) )
         {
-            if ( metricRegistry != null && isMetricEnabled( metricName ) )
-            {
-                Timer.Context context = metricRegistry.timer( name( metricPrefix, metricName, TIMER ) ).time();
-                try
-                {
-                    return callable.call();
-                }
-                finally
-                {
-                    context.stop();
-                }
-            }
-            else
-            {
-                return callable.call();
-            }
+            return metricsManager.wrapWithStandardMetrics( methodSupplier, () -> name( metricPrefix, metricName ) );
         }
-        catch ( Exception e )
+        else
         {
-            Logger logger = LoggerFactory.getLogger( getClass() );
-            logger.warn( "Call failed", e );
-            return null;
+            return methodSupplier.get();
         }
     }
 

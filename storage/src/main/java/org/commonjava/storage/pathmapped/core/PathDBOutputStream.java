@@ -20,10 +20,8 @@ import org.commonjava.storage.pathmapped.spi.PathDB;
 import org.commonjava.storage.pathmapped.spi.PhysicalStore;
 import org.commonjava.storage.pathmapped.util.ChecksumCalculator;
 
-import java.io.FilterOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
-import java.io.ByteArrayOutputStream;
 import java.security.NoSuchAlgorithmException;
 import java.util.Date;
 
@@ -135,6 +133,7 @@ public class PathDBOutputStream
     public void close() throws IOException
     {
         super.close();
+        out.close();
         if ( isNull( error ) )
         {
             Date creation = new Date();

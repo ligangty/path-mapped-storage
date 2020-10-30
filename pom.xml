@@ -55,7 +55,7 @@
         <datastaxVersion>3.7.2</datastaxVersion>
         <cassandraUnitVersion>3.7.1.0</cassandraUnitVersion>
         <hibernateVersion>5.4.4.Final</hibernateVersion>
-        <o11yphantVersion>1.0-SNAPSHOT</o11yphantVersion>
+        <o11yphantVersion>1.0</o11yphantVersion>
         <h2Version>1.4.188</h2Version>
         <weftVersion>1.15</weftVersion>
     </properties>

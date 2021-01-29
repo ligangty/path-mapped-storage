@@ -15,7 +15,6 @@
  */
 package org.commonjava.storage.pathmapped.core;
 
-import org.commonjava.cdi.util.weft.NamedThreadFactory;
 import org.commonjava.storage.pathmapped.config.PathMappedStorageConfig;
 import org.commonjava.storage.pathmapped.model.PathMap;
 import org.commonjava.storage.pathmapped.model.Reclaim;
@@ -71,8 +70,7 @@ public class PathMappedFileManager implements Closeable
             logger.info( "Start path-mapped GC thread, gcIntervalInMinutes: {}", gcIntervalInMinutes );
             int priority = 4;
             String name = "path-mapped-gc";
-            gcThreadPool = Executors.newScheduledThreadPool( 1, new NamedThreadFactory( name, new ThreadGroup( name ),
-                                                                                        true, priority ) );
+            gcThreadPool = Executors.newScheduledThreadPool( 1 );
             int initialDelay = gcIntervalInMinutes;
             gcThreadPool.scheduleAtFixedRate( () -> {
                 gc();

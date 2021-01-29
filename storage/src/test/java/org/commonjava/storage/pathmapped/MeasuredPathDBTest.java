@@ -15,6 +15,7 @@
  */
 package org.commonjava.storage.pathmapped;
 
+/*
 import org.apache.commons.io.IOUtils;
 import org.cassandraunit.utils.EmbeddedCassandraServerHelper;
 import org.commonjava.o11yphant.metrics.DefaultMetricRegistry;
@@ -28,7 +29,9 @@ import org.commonjava.storage.pathmapped.spi.PathDB;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
+*/
 import org.junit.Ignore;
+/*
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
@@ -45,10 +48,12 @@ import static org.commonjava.o11yphant.metrics.util.MetricUtils.newDefaultMetric
 import static org.commonjava.storage.pathmapped.pathdb.datastax.util.CassandraPathDBUtils.PROP_CASSANDRA_HOST;
 import static org.commonjava.storage.pathmapped.pathdb.datastax.util.CassandraPathDBUtils.PROP_CASSANDRA_KEYSPACE;
 import static org.commonjava.storage.pathmapped.pathdb.datastax.util.CassandraPathDBUtils.PROP_CASSANDRA_PORT;
+*/
 
 @Ignore
 public class MeasuredPathDBTest
 {
+/*
     private final String TEST_FS = "test";
 
     private final String PATH = "foo/bar/1.0/bar-1.0.pom";
@@ -110,5 +115,6 @@ public class MeasuredPathDBTest
         sleep( 10000 );
 
     }
+*/
 
 }

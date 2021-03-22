@@ -88,15 +88,24 @@ public class CassandraPathDB
 
     private final String keyspace;
 
+    private int replicationFactor = 1; // keyspace replica, default 1
+
     private PreparedStatement preparedExistQuery, preparedListQuery, preparedContainingQuery, preparedExistFileQuery,
                     preparedReverseMapIncrement, preparedReverseMapReduction;
 
+    @Deprecated
     public CassandraPathDB( PathMappedStorageConfig config, Session session, String keyspace )
+    {
+        this( config, session, keyspace, 1 );
+    }
+
+    public CassandraPathDB( PathMappedStorageConfig config, Session session, String keyspace, int replicationFactor )
     {
         this.config = config;
         this.keyspace = keyspace;
         this.session = session;
-        prepare( session, keyspace );
+        this.replicationFactor = replicationFactor;
+        prepare( session, keyspace, replicationFactor );
     }
 
     public CassandraPathDB( PathMappedStorageConfig config )
@@ -120,12 +129,17 @@ public class CassandraPathDB
         session = cluster.connect();
 
         keyspace = (String) config.getProperty( CassandraPathDBUtils.PROP_CASSANDRA_KEYSPACE );
-        prepare( session, keyspace );
+        Integer replica = (Integer) config.getProperty( CassandraPathDBUtils.PROP_CASSANDRA_REPLICATION_FACTOR );
+        if ( replica != null )
+        {
+            replicationFactor = replica;
+        }
+        prepare( session, keyspace, replicationFactor );
     }
 
-    private void prepare( Session session, String keyspace )
+    private void prepare( Session session, String keyspace, int replicationFactor )
     {
-        session.execute( CassandraPathDBUtils.getSchemaCreateKeyspace( keyspace ) );
+        session.execute( CassandraPathDBUtils.getSchemaCreateKeyspace( keyspace, replicationFactor ) );
         session.execute( CassandraPathDBUtils.getSchemaCreateTablePathmap( keyspace ) );
         session.execute( CassandraPathDBUtils.getSchemaCreateTableReversemap( keyspace ) );
         session.execute( CassandraPathDBUtils.getSchemaCreateTableReclaim( keyspace ) );

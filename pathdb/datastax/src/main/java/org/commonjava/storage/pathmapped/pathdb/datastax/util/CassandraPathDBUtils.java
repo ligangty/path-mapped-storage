@@ -27,10 +27,13 @@ public class CassandraPathDBUtils
 
     public static final String PROP_CASSANDRA_KEYSPACE = "cassandra_keyspace";
 
-    public static String getSchemaCreateKeyspace( String keyspace )
+    public static final String PROP_CASSANDRA_REPLICATION_FACTOR = "cassandra_replication_factor";
+
+    public static String getSchemaCreateKeyspace( String keyspace, int replicationFactor )
     {
         return "CREATE KEYSPACE IF NOT EXISTS " + keyspace
-                        + " WITH REPLICATION = {'class':'SimpleStrategy', 'replication_factor':1};";
+                        + " WITH REPLICATION = {'class':'SimpleStrategy', 'replication_factor':" + replicationFactor
+                        + "};";
     }
 
     public static String getSchemaCreateTablePathmap( String keyspace )

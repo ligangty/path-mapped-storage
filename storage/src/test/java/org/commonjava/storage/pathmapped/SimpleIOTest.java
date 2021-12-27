@@ -259,11 +259,11 @@ public class SimpleIOTest
         {
             Assert.assertThat( is, CoreMatchers.notNullValue() );
         }
-        Assert.assertThat( fileManager.delete( TEST_FS, path1 ), CoreMatchers.equalTo( true ) );
-        assertNonExistsOpen( TEST_FS, path1 );
-        //NOTE: not allow to delete a folder
+        //NOTE: not allow to delete a non-empty folder
         Assert.assertThat( fileManager.delete( TEST_FS, pathSub1 + "/" ), CoreMatchers.equalTo( false ) );
         assertPathWithChecker( ( f, p ) -> fileManager.exists( f, p ), TEST_FS, pathSub1, true );
+        Assert.assertThat( fileManager.delete( TEST_FS, path1 ), CoreMatchers.equalTo( true ) );
+        assertNonExistsOpen( TEST_FS, path1 );
     }
 
     private void assertNonExistsOpen( final String fileSystem, final String path){

@@ -55,6 +55,36 @@ public class ListingTest
     }
 
     @Test
+    public void deleteEmptyDirTest() throws IOException
+    {
+        String path1 = "/dir1/file1";
+        String path2 = "/file2";
+        writeWithContent( fileManager.openOutputStream( TEST_FS, path1 ), simpleContent );
+        writeWithContent( fileManager.openOutputStream( TEST_FS, path2 ), simpleContent );
+        List<String> lists = Arrays.asList( fileManager.list( TEST_FS, "/" ) );
+        Assert.assertThat( lists, CoreMatchers.hasItems( "dir1/", "file2" ) );
+
+        //List dir1
+        lists = Arrays.asList( fileManager.list( TEST_FS, "/dir1" ) );
+        Assert.assertThat( lists.size(), CoreMatchers.equalTo( 1 ) );
+        Assert.assertThat( lists, CoreMatchers.hasItems( "file1" ) );
+
+        //Delete dir1 should fail
+        boolean deleted = fileManager.delete( TEST_FS, "/dir1/" );
+        Assert.assertFalse( deleted );
+
+        //Delete file1 and empty dir1
+        fileManager.delete( TEST_FS, path1 );
+        deleted = fileManager.delete( TEST_FS, "/dir1/" ); // it will be taken as file if no trailing '/'
+        Assert.assertTrue( deleted );
+
+        //Only file2 left
+        lists = Arrays.asList( fileManager.list( TEST_FS, "/" ) );
+        Assert.assertThat( lists.size(), CoreMatchers.equalTo( 1 ) );
+        Assert.assertThat( lists, CoreMatchers.hasItems( "file2" ) );
+    }
+
+    @Test
     public void listEntriesInDiffFolders()
             throws IOException
     {

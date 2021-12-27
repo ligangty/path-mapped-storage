@@ -90,7 +90,7 @@ public class CassandraPathDB
 
     private int replicationFactor = 1; // keyspace replica, default 1
 
-    private PreparedStatement preparedExistQuery, preparedListQuery, preparedContainingQuery, preparedExistFileQuery,
+    private PreparedStatement preparedExistQuery, preparedListQuery, preparedListCheckEmpty, preparedContainingQuery, preparedExistFileQuery,
                     preparedReverseMapIncrement, preparedReverseMapReduction;
 
     @Deprecated
@@ -162,6 +162,9 @@ public class CassandraPathDB
 
         preparedListQuery =
                         session.prepare( "SELECT * FROM " + keyspace + ".pathmap WHERE filesystem=? and parentpath=?;" );
+
+        preparedListCheckEmpty = session.prepare(
+                        "SELECT count(*) FROM " + keyspace + ".pathmap WHERE filesystem=? and parentpath=?;" );
 
         preparedContainingQuery = session.prepare( "SELECT filesystem FROM " + keyspace
                                                                    + ".pathmap WHERE filesystem IN ? and parentpath=? and filename=?;" );
@@ -577,7 +580,14 @@ public class CassandraPathDB
         String fileId = pathMap.getFileId();
         if ( fileId == null )
         {
-            logger.debug( "Can not delete a directory, {}", pathMap );
+            // can only remove empty dir
+            if ( isEmptyDirectory( fileSystem, path ) )
+            {
+                logger.info( "Delete empty dir, {}", pathMap );
+                pathMapMapper.delete( pathMap.getFileSystem(), pathMap.getParentPath(), pathMap.getFilename() );
+                return true;
+            }
+            logger.warn( "Can not delete non-empty directory, {}", pathMap );
             return false;
         }
 
@@ -599,6 +609,22 @@ public class CassandraPathDB
         }
 
         return true;
+    }
+
+    private boolean isEmptyDirectory( String fileSystem, String path )
+    {
+        path = PathMapUtils.normalizeParentPath( path );
+        BoundStatement bound = preparedListCheckEmpty.bind( fileSystem, path );
+        ResultSet result = session.execute( bound );
+        Row row = result.one();
+        boolean empty = false;
+        if ( row != null )
+        {
+            long count = row.get( 0, Long.class );
+            empty = count <= 0;
+        }
+        logger.trace( "Dir '{}' is {} in fileSystem '{}'", path, ( empty ? "empty" : "not empty" ), fileSystem );
+        return empty;
     }
 
     private ReverseMap deleteFromReverseMap( String fileId, String path )

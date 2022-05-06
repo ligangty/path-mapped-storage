@@ -42,6 +42,8 @@ public class DefaultPathMappedStorageConfig
 
     private String commonFileExtensions = DEFAULT_COMMON_FILE_EXTENSIONS;
 
+    private boolean physicalFileExistenceCheckEnabled = false;
+
     public DefaultPathMappedStorageConfig()
     {
     }
@@ -127,5 +129,14 @@ public class DefaultPathMappedStorageConfig
     public void setCommonFileExtensions( String commonFileExtensions )
     {
         this.commonFileExtensions = commonFileExtensions;
+    }
+
+    @Override
+    public boolean isPhysicalFileExistenceCheckEnabled() {
+        return physicalFileExistenceCheckEnabled;
+    }
+
+    public void setPhysicalFileExistenceCheckEnabled(boolean physicalFileExistenceCheckEnabled) {
+        this.physicalFileExistenceCheckEnabled = physicalFileExistenceCheckEnabled;
     }
 }

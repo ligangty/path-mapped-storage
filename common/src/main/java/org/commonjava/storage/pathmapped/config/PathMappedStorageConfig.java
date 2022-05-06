@@ -31,4 +31,8 @@ public interface PathMappedStorageConfig
     int getGCBatchSize();
 
     String getCommonFileExtensions();
+
+    default boolean isPhysicalFileExistenceCheckEnabled() {
+        return false;
+    }
 }

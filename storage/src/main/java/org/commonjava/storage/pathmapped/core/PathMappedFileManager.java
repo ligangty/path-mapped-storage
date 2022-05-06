@@ -274,11 +274,18 @@ public class PathMappedFileManager implements Closeable
             String storageFile = pathDB.getStorageFile( fileSystem, path );
             if ( storageFile != null )
             {
-                return true;
+                if ( !config.isPhysicalFileExistenceCheckEnabled() )
+                {
+                    return true;
+                }
                 // we used to check the physical file during exist check. Here we ignore it because pathDB should be the
                 // only source-of-truth. If pathDB entry exists but physical file missing, that is a bug and IOException is thrown.
                 // we will run this code to see if any problem. ruhan Apr 20, 2020
-/*
+
+                // Add the physical file check back. We hit data corruption on some environment
+                // and this check will help Indy recover from bad state. We agree to make it configurable, e.g,
+                // we don't need it on prod, just enable it on devel where the data corruption occurred.
+                // ruhan May 6, 2022
                 if ( physicalStore.exists( storageFile ) )
                 {
                     return true;
@@ -289,7 +296,6 @@ public class PathMappedFileManager implements Closeable
                                  fileSystem, path, storageFile );
                     return false;
                 }
-*/
             }
         }
         return false;

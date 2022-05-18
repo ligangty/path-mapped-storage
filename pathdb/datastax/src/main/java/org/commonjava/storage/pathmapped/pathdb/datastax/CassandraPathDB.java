@@ -17,7 +17,6 @@ package org.commonjava.storage.pathmapped.pathdb.datastax;
 
 import com.datastax.driver.core.BoundStatement;
 import com.datastax.driver.core.Cluster;
-import com.datastax.driver.core.ConsistencyLevel;
 import com.datastax.driver.core.PreparedStatement;
 import com.datastax.driver.core.ResultSet;
 import com.datastax.driver.core.Row;
@@ -31,6 +30,7 @@ import org.commonjava.storage.pathmapped.pathdb.datastax.model.DtxFileChecksum;
 import org.commonjava.storage.pathmapped.pathdb.datastax.model.DtxPathMap;
 import org.commonjava.storage.pathmapped.pathdb.datastax.model.DtxReclaim;
 import org.commonjava.storage.pathmapped.pathdb.datastax.model.DtxReverseMap;
+import org.commonjava.storage.pathmapped.pathdb.datastax.util.AsyncJobExecutor;
 import org.commonjava.storage.pathmapped.pathdb.datastax.util.CassandraPathDBUtils;
 import org.commonjava.storage.pathmapped.config.PathMappedStorageConfig;
 import org.commonjava.storage.pathmapped.model.FileChecksum;
@@ -71,6 +71,8 @@ public class CassandraPathDB
                 implements PathDB, Closeable
 {
     private final Logger logger = LoggerFactory.getLogger( getClass() );
+
+    private AsyncJobExecutor asyncJobExecutor; // run non-critical jobs on backend
 
     private Session session;
 
@@ -176,6 +178,8 @@ public class CassandraPathDB
         preparedReverseMapReduction =
                         session.prepare( "UPDATE " + keyspace + ".reversemap SET paths = paths - ? WHERE fileid=?;" );
         preparedReverseMapReduction.setConsistencyLevel( ONE );
+
+        asyncJobExecutor = new AsyncJobExecutor( config );
     }
 
     @Override
@@ -183,6 +187,7 @@ public class CassandraPathDB
     {
         if ( cluster != null ) // close only if the session and cluster were built by self
         {
+            asyncJobExecutor.shutdownAndWaitTermination();
             session.close();
             cluster.close();
             logger.debug( "Cassandra connection closed" );
@@ -486,10 +491,10 @@ public class CassandraPathDB
     {
         logger.debug( "Insert: {}", pathMap );
 
-        String fileSystem = pathMap.getFileSystem();
-        String parent = pathMap.getParentPath();
+        final String fileSystem = pathMap.getFileSystem();
+        final String parent = pathMap.getParentPath();
 
-        makeDirs( fileSystem, parent );
+        asyncJobExecutor.execute(() -> makeDirs( fileSystem, parent ));
 
         String path = PathMapUtils.normalize( parent, pathMap.getFilename() );
         PathMap prev = getPathMap( fileSystem, path );
@@ -514,7 +519,7 @@ public class CassandraPathDB
                 ( (DtxPathMap) pathMap ).setChecksum( existedChecksum.getChecksum() );
                 // Need to mark the generated file storage path as reclaimed to remove it.
                 final String deprecatedFileId = PathMapUtils.getRandomFileId();
-                reclaim( deprecatedFileId, deprecatedStorage, checksum );
+                asyncJobExecutor.execute(() -> reclaim( deprecatedFileId, deprecatedStorage, checksum ));
             }
             else
             {
@@ -526,8 +531,8 @@ public class CassandraPathDB
 
         pathMapMapper.save( (DtxPathMap) pathMap );
 
-        // insert reverse mapping and path table
-        addToReverseMap( pathMap.getFileId(), PathMapUtils.marshall( fileSystem, path ) );
+        // update reverse mapping
+        asyncJobExecutor.execute(() -> addToReverseMap( pathMap.getFileId(), PathMapUtils.marshall( fileSystem, path ) ));
 
         logger.debug( "Insert finished: {}", pathMap.getFilename() );
     }

@@ -23,12 +23,22 @@ import org.junit.Test;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
 
+import static org.commonjava.storage.pathmapped.pathdb.datastax.util.AsyncJobExecutor.PROP_ASYNC_WORKER_ENABLED;
 import static org.junit.Assert.assertEquals;
 
 public class ListingTest
         extends AbstractCassandraFMTest
 {
+    @Override
+    protected Map<String, Object> getProps()
+    {
+        Map<String, Object> props = super.getProps();
+        props.put( PROP_ASYNC_WORKER_ENABLED, false ); // disable async jobs so the listing get immediate result
+        return props;
+    }
+
     @Test
     public void listRootFolder()
             throws IOException

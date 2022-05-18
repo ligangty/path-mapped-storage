@@ -62,7 +62,7 @@ public abstract class AbstractCassandraFMTest
     @Rule
     public TestName name = new TestName();
 
-    private static CassandraPathDB pathDB;
+    private CassandraPathDB pathDB;
 
     Session session;
 
@@ -106,14 +106,18 @@ public abstract class AbstractCassandraFMTest
 
     @BeforeClass
     public static void startEmbeddedCassandra()
-            throws Exception
-    {
+            throws Exception {
         EmbeddedCassandraServerHelper.startEmbeddedCassandra();
-        Map<String, Object> props = new HashMap<>();
-        props.put( PROP_CASSANDRA_HOST, "localhost" );
-        props.put( PROP_CASSANDRA_PORT, 9142 );
-        props.put( PROP_CASSANDRA_KEYSPACE, KEYSPACE );
+    }
 
+    @AfterClass
+    public static void shutdown()
+    {
+    }
+
+    protected void preparePathDB()
+    {
+        Map<String, Object> props = getProps();
         config = new DefaultPathMappedStorageConfig( props );
         // In test, we should let gc happened immediately when triggered.
         config.setGcGracePeriodInHours( 0 );
@@ -121,11 +125,18 @@ public abstract class AbstractCassandraFMTest
         pathDB = new CassandraPathDB( config );
     }
 
-    @AfterClass
-    public static void shutdown()
+    protected Map<String, Object> getProps()
     {
-        if ( pathDB != null )
-        {
+        Map<String, Object> props = new HashMap<>();
+        props.put( PROP_CASSANDRA_HOST, "localhost" );
+        props.put( PROP_CASSANDRA_PORT, 9142 );
+        props.put( PROP_CASSANDRA_KEYSPACE, KEYSPACE );
+        return props;
+    }
+
+    void closePathDB()
+    {
+        if ( pathDB != null ) {
             pathDB.close();
         }
     }
@@ -139,6 +150,8 @@ public abstract class AbstractCassandraFMTest
     public void setup()
             throws Exception
     {
+        preparePathDB();
+
         File baseDir = temp.newFolder();
         baseStoragePath = baseDir.getCanonicalPath();
         fileManager = new PathMappedFileManager( config, pathDB,
@@ -155,6 +168,7 @@ public abstract class AbstractCassandraFMTest
         clearData();
         clearCommon();
         cleanAllData();
+        closePathDB();
     }
 
     private void cleanAllData()

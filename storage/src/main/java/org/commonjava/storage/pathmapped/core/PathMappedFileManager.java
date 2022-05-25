@@ -16,10 +16,12 @@
 package org.commonjava.storage.pathmapped.core;
 
 import org.commonjava.storage.pathmapped.config.PathMappedStorageConfig;
+import org.commonjava.storage.pathmapped.model.Filesystem;
 import org.commonjava.storage.pathmapped.model.PathMap;
 import org.commonjava.storage.pathmapped.model.Reclaim;
 import org.commonjava.storage.pathmapped.spi.FileInfo;
 import org.commonjava.storage.pathmapped.spi.PathDB;
+import org.commonjava.storage.pathmapped.spi.PathDBAdmin;
 import org.commonjava.storage.pathmapped.spi.PhysicalStore;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -375,6 +377,14 @@ public class PathMappedFileManager implements Closeable
     public PathDB getPathDB()
     {
         return pathDB;
+    }
+
+    public Filesystem getFilesystem(String filesystem)
+    {
+        if (pathDB instanceof PathDBAdmin ) {
+            return ((PathDBAdmin)pathDB).getFilesystem(filesystem);
+        }
+        return null;
     }
 
     @Override

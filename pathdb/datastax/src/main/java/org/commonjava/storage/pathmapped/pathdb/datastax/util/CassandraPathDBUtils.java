@@ -36,6 +36,22 @@ public class CassandraPathDBUtils
                         + "};";
     }
 
+    /*
+     * 'filesystem' table provides basic file count and total size of this filesystem.
+     * A counter is a 64-bit signed integer and on which only 2 operations are supported: incrementing and decrementing.
+     * Table that contains a counter can only contain counters. In other words, either all the columns of a table
+     * outside the PRIMARY KEY have the counter type, or none of them have it.
+     */
+    public static String getSchemaCreateTableFilesystem( String keyspace )
+    {
+        return "CREATE TABLE IF NOT EXISTS " + keyspace + ".filesystem ("
+                + "filesystem varchar,"
+                + "filecount counter,"
+                + "size counter,"
+                + "PRIMARY KEY (filesystem)"
+                + ");";
+    }
+
     public static String getSchemaCreateTablePathmap( String keyspace )
     {
         return "CREATE TABLE IF NOT EXISTS " + keyspace + ".pathmap ("

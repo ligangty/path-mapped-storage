@@ -26,18 +26,13 @@ import com.datastax.driver.mapping.MappingManager;
 import com.datastax.driver.mapping.Result;
 
 import com.google.common.collect.TreeTraverser;
-import org.commonjava.storage.pathmapped.pathdb.datastax.model.DtxFileChecksum;
-import org.commonjava.storage.pathmapped.pathdb.datastax.model.DtxPathMap;
-import org.commonjava.storage.pathmapped.pathdb.datastax.model.DtxReclaim;
-import org.commonjava.storage.pathmapped.pathdb.datastax.model.DtxReverseMap;
+import org.commonjava.storage.pathmapped.model.*;
+import org.commonjava.storage.pathmapped.pathdb.datastax.model.*;
 import org.commonjava.storage.pathmapped.pathdb.datastax.util.AsyncJobExecutor;
 import org.commonjava.storage.pathmapped.pathdb.datastax.util.CassandraPathDBUtils;
 import org.commonjava.storage.pathmapped.config.PathMappedStorageConfig;
-import org.commonjava.storage.pathmapped.model.FileChecksum;
-import org.commonjava.storage.pathmapped.model.PathMap;
-import org.commonjava.storage.pathmapped.model.Reclaim;
-import org.commonjava.storage.pathmapped.model.ReverseMap;
 import org.commonjava.storage.pathmapped.spi.PathDB;
+import org.commonjava.storage.pathmapped.spi.PathDBAdmin;
 import org.commonjava.storage.pathmapped.util.PathMapUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -68,7 +63,7 @@ import static org.commonjava.storage.pathmapped.spi.PathDB.FileType.file;
 import static org.commonjava.storage.pathmapped.util.PathMapUtils.ROOT_DIR;
 
 public class CassandraPathDB
-                implements PathDB, Closeable
+                implements PathDB, PathDBAdmin, Closeable
 {
     private final Logger logger = LoggerFactory.getLogger( getClass() );
 
@@ -86,6 +81,8 @@ public class CassandraPathDB
 
     private Mapper<DtxFileChecksum> fileChecksumMapper;
 
+    private Mapper<DtxFilesystem> filesystemMapper;
+
     private PathMappedStorageConfig config;
 
     private final String keyspace;
@@ -93,7 +90,8 @@ public class CassandraPathDB
     private int replicationFactor = 1; // keyspace replica, default 1
 
     private PreparedStatement preparedExistQuery, preparedListQuery, preparedListCheckEmpty, preparedContainingQuery, preparedExistFileQuery,
-                    preparedReverseMapIncrement, preparedReverseMapReduction;
+                    preparedReverseMapIncrement, preparedReverseMapReduction,
+            preparedFilesystemIncrement, preparedFilesystemReduction;
 
     @Deprecated
     public CassandraPathDB( PathMappedStorageConfig config, Session session, String keyspace )
@@ -146,6 +144,7 @@ public class CassandraPathDB
         session.execute( CassandraPathDBUtils.getSchemaCreateTableReversemap( keyspace ) );
         session.execute( CassandraPathDBUtils.getSchemaCreateTableReclaim( keyspace ) );
         session.execute( CassandraPathDBUtils.getSchemaCreateTableFileChecksum( keyspace ) );
+        session.execute( CassandraPathDBUtils.getSchemaCreateTableFilesystem( keyspace ) );
 
         MappingManager manager = new MappingManager( session );
 
@@ -153,6 +152,7 @@ public class CassandraPathDB
         reverseMapMapper = manager.mapper( DtxReverseMap.class, keyspace );
         reclaimMapper = manager.mapper( DtxReclaim.class, keyspace );
         fileChecksumMapper = manager.mapper( DtxFileChecksum.class, keyspace );
+        filesystemMapper = manager.mapper( DtxFilesystem.class, keyspace );
 
         preparedExistFileQuery = session.prepare( "SELECT count(*) FROM " + keyspace
                                                                   + ".pathmap WHERE filesystem=? and parentpath=? and filename=?;" );
@@ -178,6 +178,12 @@ public class CassandraPathDB
         preparedReverseMapReduction =
                         session.prepare( "UPDATE " + keyspace + ".reversemap SET paths = paths - ? WHERE fileid=?;" );
         preparedReverseMapReduction.setConsistencyLevel( ONE );
+
+        preparedFilesystemIncrement =
+                session.prepare("UPDATE " + keyspace + ".filesystem SET filecount=filecount+?, size=size+? WHERE filesystem=?;" );
+
+        preparedFilesystemReduction =
+                session.prepare("UPDATE " + keyspace + ".filesystem SET filecount=filecount-?, size=size-? WHERE filesystem=?;" );
 
         asyncJobExecutor = new AsyncJobExecutor( config );
     }
@@ -504,22 +510,23 @@ public class CassandraPathDB
             delete( fileSystem, path );
         }
 
-        String checksum = pathMap.getChecksum();
+        boolean isDuplicateFile = false;
 
+        String checksum = pathMap.getChecksum();
         if ( isNotBlank( checksum ) )
         {
             final FileChecksum existedChecksum = fileChecksumMapper.get( checksum );
-
             if ( existedChecksum != null )
             {
-                logger.info( "File checksum conflict, should use existed file storage" );
+                logger.debug( "File checksum exists, use existing file storage" );
+                isDuplicateFile = true;
                 final String deprecatedStorage = pathMap.getFileStorage();
                 ( (DtxPathMap) pathMap ).setFileStorage( existedChecksum.getStorage() );
                 ( (DtxPathMap) pathMap ).setFileId( existedChecksum.getFileId() );
                 ( (DtxPathMap) pathMap ).setChecksum( existedChecksum.getChecksum() );
-                // Need to mark the generated file storage path as reclaimed to remove it.
-                final String deprecatedFileId = PathMapUtils.getRandomFileId();
-                asyncJobExecutor.execute(() -> reclaim( deprecatedFileId, deprecatedStorage, checksum ));
+                // Mark the generated file storage path as reclaimed to remove it.
+                final String tempFileId = PathMapUtils.getRandomFileId();
+                asyncJobExecutor.execute(() -> reclaim( tempFileId, deprecatedStorage, checksum ));
             }
             else
             {
@@ -531,10 +538,27 @@ public class CassandraPathDB
 
         pathMapMapper.save( (DtxPathMap) pathMap );
 
-        // update reverse mapping
-        asyncJobExecutor.execute(() -> addToReverseMap( pathMap.getFileId(), PathMapUtils.marshall( fileSystem, path ) ));
+        final boolean isDuplicateFileFinal = isDuplicateFile;
+        asyncJobExecutor.execute(() -> {
+            postInsertionActions( fileSystem, path, pathMap, isDuplicateFileFinal );
+        });
 
         logger.debug( "Insert finished: {}", pathMap.getFilename() );
+    }
+
+    private void postInsertionActions(String fileSystem, String path, PathMap pathMap, boolean isDuplicateFile)
+    {
+        // update reverse mapping
+        addToReverseMap( pathMap.getFileId(), PathMapUtils.marshall( fileSystem, path ) );
+        // update the filesystem for non-dup files
+        if ( isDuplicateFile )
+        {
+            updateFilesystemIncrease( fileSystem, 1, 0 );
+        }
+        else
+        {
+            updateFilesystemIncrease( fileSystem, 1, pathMap.getSize() );
+        }
     }
 
     @Override
@@ -599,10 +623,22 @@ public class CassandraPathDB
         logger.debug( "Delete pathMap, {}", pathMap );
         pathMapMapper.delete( pathMap.getFileSystem(), pathMap.getParentPath(), pathMap.getFilename() );
 
+        // update reverse mapping and filesystem
+        asyncJobExecutor.execute(() -> {
+            postDeletionActions( fileSystem, path, pathMap );
+        });
+
+        return true;
+    }
+
+    private void postDeletionActions(String fileSystem, String path, PathMap pathMap)
+    {
+        boolean isDuplicateFileExists = true;
         ReverseMap reverseMap = deleteFromReverseMap( pathMap.getFileId(), PathMapUtils.marshall( fileSystem, path ) );
         if ( reverseMap == null || reverseMap.getPaths() == null || reverseMap.getPaths().isEmpty() )
         {
-            // clean checksum in checksum table as no file id refer to it.
+            isDuplicateFileExists = false;
+            // clean checksum in checksum table when no file id referring it.
             String checksum = pathMap.getChecksum();
             if ( isNotBlank( checksum ) )
             {
@@ -610,10 +646,13 @@ public class CassandraPathDB
                 fileChecksumMapper.delete( checksum );
             }
             // reclaim, but not remove from reverse table immediately (for race-detection/double-check)
-            reclaim( fileId, pathMap.getFileStorage(), checksum );
+            reclaim( pathMap.getFileId(), pathMap.getFileStorage(), checksum );
         }
-
-        return true;
+        if ( isDuplicateFileExists ) {
+            updateFilesystemDecrease(fileSystem, 1, 0);
+        } else {
+            updateFilesystemDecrease(fileSystem, 1, pathMap.getSize());
+        }
     }
 
     private boolean isEmptyDirectory( String fileSystem, String path )
@@ -652,6 +691,26 @@ public class CassandraPathDB
         increment.add( path );
         bound.setSet( 0, increment );
         bound.setString( 1, fileId );
+        session.execute( bound );
+    }
+
+    private void updateFilesystemIncrease(String filesystem, long count, long size)
+    {
+        logger.debug( "Update filesystem '{}', count: +{}, size: +{}", filesystem, count, size );
+        BoundStatement bound = preparedFilesystemIncrement.bind();
+        bound.setLong( 0, count );
+        bound.setLong( 1, size );
+        bound.setString( 2, filesystem );
+        session.execute( bound );
+    }
+
+    private void updateFilesystemDecrease(String filesystem, long count, long size)
+    {
+        logger.debug( "Update filesystem '{}', count: -{}, size: -{}", filesystem, count, size );
+        BoundStatement bound = preparedFilesystemReduction.bind();
+        bound.setLong( 0, count );
+        bound.setLong( 1, size );
+        bound.setString( 2, filesystem );
         session.execute( bound );
     }
 
@@ -794,4 +853,9 @@ public class CassandraPathDB
         return ret - Duration.ofHours( gcGracePeriodInHours ).toMillis();
     }
 
+    @Override
+    public Filesystem getFilesystem(String filesystem)
+    {
+        return filesystemMapper.get(filesystem);
+    }
 }

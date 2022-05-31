@@ -493,7 +493,7 @@ public class CassandraPathDB
         insert( pathMap );
     }
 
-    private void insert( PathMap pathMap )
+    private void insert( DtxPathMap pathMap )
     {
         logger.debug( "Insert: {}", pathMap );
 
@@ -515,15 +515,14 @@ public class CassandraPathDB
         String checksum = pathMap.getChecksum();
         if ( isNotBlank( checksum ) )
         {
-            final FileChecksum existedChecksum = fileChecksumMapper.get( checksum );
-            if ( existedChecksum != null )
+            final FileChecksum existing = fileChecksumMapper.get( checksum );
+            if ( existing != null )
             {
                 logger.debug( "File checksum exists, use existing file storage" );
                 isDuplicateFile = true;
                 final String deprecatedStorage = pathMap.getFileStorage();
-                ( (DtxPathMap) pathMap ).setFileStorage( existedChecksum.getStorage() );
-                ( (DtxPathMap) pathMap ).setFileId( existedChecksum.getFileId() );
-                ( (DtxPathMap) pathMap ).setChecksum( existedChecksum.getChecksum() );
+                pathMap.setFileStorage( existing.getStorage() );
+                pathMap.setFileId( existing.getFileId() );
                 // Mark the generated file storage path as reclaimed to remove it.
                 final String tempFileId = PathMapUtils.getRandomFileId();
                 asyncJobExecutor.execute(() -> reclaim( tempFileId, deprecatedStorage, checksum ));
@@ -536,7 +535,7 @@ public class CassandraPathDB
             }
         }
 
-        pathMapMapper.save( (DtxPathMap) pathMap );
+        pathMapMapper.save( pathMap );
 
         final boolean isDuplicateFileFinal = isDuplicateFile;
         asyncJobExecutor.execute(() -> {
@@ -747,14 +746,14 @@ public class CassandraPathDB
     @Override
     public boolean copy( String fromFileSystem, String fromPath, String toFileSystem, String toPath )
     {
-        PathMap pathMap = getPathMap( fromFileSystem, fromPath );
+        DtxPathMap pathMap = getPathMap( fromFileSystem, fromPath );
         if ( pathMap == null )
         {
             logger.warn( "Source not found, {}:{}", fromFileSystem, fromPath );
             return false;
         }
 
-        PathMap target = getPathMap( toFileSystem, toPath );
+        DtxPathMap target = getPathMap( toFileSystem, toPath );
         if ( target != null )
         {
             logger.info( "Target already exists, delete it. {}:{}", toFileSystem, toPath );

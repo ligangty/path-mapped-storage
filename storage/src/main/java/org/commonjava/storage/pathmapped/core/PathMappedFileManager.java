@@ -70,8 +70,6 @@ public class PathMappedFileManager implements Closeable
         if ( gcIntervalInMinutes > 0 )
         {
             logger.info( "Start path-mapped GC thread, gcIntervalInMinutes: {}", gcIntervalInMinutes );
-            int priority = 4;
-            String name = "path-mapped-gc";
             gcThreadPool = Executors.newScheduledThreadPool( 1 );
             int initialDelay = gcIntervalInMinutes;
             gcThreadPool.scheduleAtFixedRate( () -> {

@@ -34,8 +34,6 @@ import org.apache.commons.cli.ParseException;
 import org.commonjava.storage.pathmapped.config.DefaultPathMappedStorageConfig;
 import org.commonjava.storage.pathmapped.pathdb.datastax.CassandraPathDB;
 import org.commonjava.storage.pathmapped.pathdb.datastax.model.DtxPathMap;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.nio.file.Paths;
 import java.util.ArrayList;
@@ -46,11 +44,7 @@ import static org.apache.commons.lang.StringUtils.isNotBlank;
 
 public class CassandraPathDBTool
 {
-    private final Logger logger = LoggerFactory.getLogger( getClass() );
-
     private final Session session;
-
-    private final String keyspace;
 
     private final String filesystem;
 
@@ -63,7 +57,6 @@ public class CassandraPathDBTool
     public CassandraPathDBTool( Session session, String keyspace, String filesystem )
     {
         this.session = session;
-        this.keyspace = keyspace;
         this.filesystem = filesystem;
 
         preparedListQuery = session.prepare(

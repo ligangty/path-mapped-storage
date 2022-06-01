@@ -53,13 +53,10 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
-import static com.datastax.driver.core.ConsistencyLevel.ONE;
-import static com.datastax.driver.core.ConsistencyLevel.QUORUM;
+import static com.datastax.driver.core.ConsistencyLevel.*;
 import static java.util.Collections.emptySet;
 import static org.apache.commons.lang.StringUtils.isNotBlank;
-import static org.commonjava.storage.pathmapped.spi.PathDB.FileType.all;
-import static org.commonjava.storage.pathmapped.spi.PathDB.FileType.dir;
-import static org.commonjava.storage.pathmapped.spi.PathDB.FileType.file;
+import static org.commonjava.storage.pathmapped.spi.PathDB.FileType.*;
 import static org.commonjava.storage.pathmapped.util.PathMapUtils.ROOT_DIR;
 
 public class CassandraPathDB

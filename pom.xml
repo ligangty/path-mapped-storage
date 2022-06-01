@@ -57,6 +57,7 @@
         <hibernateVersion>5.4.4.Final</hibernateVersion>
         <o11yphantVersion>1.4</o11yphantVersion>
         <h2Version>1.4.188</h2Version>
+        <pmd.failOnViolation>false</pmd.failOnViolation>
     </properties>
 
     <dependencyManagement>

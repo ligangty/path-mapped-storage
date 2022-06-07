@@ -151,18 +151,6 @@ public class PathMappedFileManager implements Closeable
         return pathDB.delete( fileSystem, path );
     }
 
-    public void cleanupCurrentThread()
-    {
-    }
-
-    public void startReporting()
-    {
-    }
-
-    public void stopReporting()
-    {
-    }
-
     public String[] list( String fileSystem, String path )
     {
         return list( fileSystem, path, PathDB.FileType.all );

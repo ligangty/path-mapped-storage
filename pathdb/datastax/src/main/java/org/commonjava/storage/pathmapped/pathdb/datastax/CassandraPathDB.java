@@ -304,10 +304,10 @@ public class CassandraPathDB
             }
         }
 
-        TreeTraverser<PathMap> traverser = new TreeTraverser<PathMap>()
+        TreeTraverser<DtxPathMap> traverser = new TreeTraverser<DtxPathMap>()
         {
             @Override
-            public Iterable<PathMap> children( PathMap cur )
+            public Iterable<DtxPathMap> children( DtxPathMap cur )
             {
                 String parentPath;
                 if ( cur == FAKE_ROOT_OBJ )
@@ -319,7 +319,7 @@ public class CassandraPathDB
                     parentPath = Paths.get( cur.getParentPath(), cur.getFilename() ).toString();
                 }
                 Result<DtxPathMap> ret = boundAndRunListQuery( fileSystem, parentPath );
-                return new ArrayList<>( ret.all() );
+                return ret.all();
             }
         };
         AtomicInteger count = new AtomicInteger( 0 );

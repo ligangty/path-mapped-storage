@@ -38,7 +38,7 @@ public class DefaultPathMappedStorageConfig
 
     private String deduplicatePattern;
 
-    private static final String DEFAULT_COMMON_FILE_EXTENSIONS = ".+\\.(jar|xml|pom|gz|md5|sha1|sha256)$";
+    private static final String DEFAULT_COMMON_FILE_EXTENSIONS = ".+\\.(jar|json|xml|pom|gz|tgz|md5|sha1|sha256)$";
 
     private String commonFileExtensions = DEFAULT_COMMON_FILE_EXTENSIONS;
 

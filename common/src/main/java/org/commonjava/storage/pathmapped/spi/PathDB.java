@@ -34,6 +34,8 @@ public interface PathDB
 
     List<PathMap> list( String fileSystem, String path, boolean recursive, int limit, FileType fileType );
 
+    PathMap getPathMap( String fileSystem, String path );
+
     long getFileLength( String fileSystem, String path );
 
     long getFileLastModified( String fileSystem, String path );

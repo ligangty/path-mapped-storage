@@ -58,6 +58,11 @@ public class MeasuredPathDB
     }
 
     @Override
+    public PathMap getPathMap(String fileSystem, String path) {
+        return measure( () -> decorated.getPathMap( fileSystem, path ), "getPathMap" );
+    }
+
+    @Override
     public long getFileLength( String fileSystem, String path )
     {
         return measure( () -> decorated.getFileLength( fileSystem, path ), "getFileLength" );

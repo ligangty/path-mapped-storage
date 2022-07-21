@@ -370,7 +370,8 @@ public class CassandraPathDB
         return -1;
     }
 
-    public DtxPathMap getPathMap( String fileSystem, String path )
+    @Override
+    public PathMap getPathMap( String fileSystem, String path )
     {
         String parentPath = PathMapUtils.getParentPath( path );
         String filename = PathMapUtils.getFilename( path );
@@ -743,14 +744,14 @@ public class CassandraPathDB
     @Override
     public boolean copy( String fromFileSystem, String fromPath, String toFileSystem, String toPath )
     {
-        DtxPathMap pathMap = getPathMap( fromFileSystem, fromPath );
+        DtxPathMap pathMap = (DtxPathMap) getPathMap( fromFileSystem, fromPath );
         if ( pathMap == null )
         {
             logger.warn( "Source not found, {}:{}", fromFileSystem, fromPath );
             return false;
         }
 
-        DtxPathMap target = getPathMap( toFileSystem, toPath );
+        DtxPathMap target = (DtxPathMap) getPathMap( toFileSystem, toPath );
         if ( target != null )
         {
             logger.info( "Target already exists, delete it. {}:{}", toFileSystem, toPath );

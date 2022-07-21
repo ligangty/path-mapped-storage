@@ -210,6 +210,11 @@ public class PathMappedFileManager implements Closeable
         return ret;
     }
 
+    public PathMap getPathMap( String fileSystem, String path )
+    {
+        return pathDB.getPathMap( fileSystem, path );
+    }
+
     public long getFileLength( String fileSystem, String path )
     {
         if ( path == null )

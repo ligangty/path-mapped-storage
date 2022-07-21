@@ -79,6 +79,12 @@ public class JPAPathDB
     }
 
     @Override
+    public PathMap getPathMap(String fileSystem, String path)
+    {
+        return findPathMap( fileSystem, path );
+    }
+
+    @Override
     public long getFileLength( String fileSystem, String path )
     {
         PathMap pathMap = findPathMap( fileSystem, path );

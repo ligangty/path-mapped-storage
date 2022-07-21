@@ -32,6 +32,7 @@ import org.apache.commons.cli.OptionGroup;
 import org.apache.commons.cli.Options;
 import org.apache.commons.cli.ParseException;
 import org.commonjava.storage.pathmapped.config.DefaultPathMappedStorageConfig;
+import org.commonjava.storage.pathmapped.model.PathMap;
 import org.commonjava.storage.pathmapped.pathdb.datastax.CassandraPathDB;
 import org.commonjava.storage.pathmapped.pathdb.datastax.model.DtxPathMap;
 
@@ -68,7 +69,7 @@ public class CassandraPathDBTool
         cassandraPathDB = new CassandraPathDB( new DefaultPathMappedStorageConfig(), session, keyspace );
     }
 
-    public void get( String absolutePath, Consumer<DtxPathMap> consumer )
+    public void get( String absolutePath, Consumer<PathMap> consumer )
     {
         consumer.accept( cassandraPathDB.getPathMap( filesystem, absolutePath ) );
     }

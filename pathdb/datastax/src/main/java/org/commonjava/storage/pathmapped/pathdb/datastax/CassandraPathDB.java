@@ -88,7 +88,7 @@ public class CassandraPathDB
 
     private PreparedStatement preparedExistQuery, preparedListQuery, preparedListCheckEmpty, preparedContainingQuery, preparedExistFileQuery,
                     preparedReverseMapIncrement, preparedReverseMapReduction,
-            preparedFilesystemIncrement, preparedFilesystemReduction;
+            preparedFilesystemIncrement, preparedFilesystemReduction, preparedFilesystemList;
 
     @Deprecated
     public CassandraPathDB( PathMappedStorageConfig config, Session session, String keyspace )
@@ -181,6 +181,8 @@ public class CassandraPathDB
 
         preparedFilesystemReduction =
                 session.prepare("UPDATE " + keyspace + ".filesystem SET filecount=filecount-?, size=size-? WHERE filesystem=?;" );
+
+        preparedFilesystemList = session.prepare("SELECT * FROM " + keyspace + ".filesystem;" );
 
         asyncJobExecutor = new AsyncJobExecutor( config );
     }
@@ -854,5 +856,12 @@ public class CassandraPathDB
     public Filesystem getFilesystem(String filesystem)
     {
         return filesystemMapper.get(filesystem);
+    }
+
+    @Override
+    public List<? extends Filesystem> getFilesystems()
+    {
+        ResultSet result = session.execute( preparedFilesystemList.bind() );
+        return filesystemMapper.map(result).all();
     }
 }

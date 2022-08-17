@@ -17,7 +17,11 @@ package org.commonjava.storage.pathmapped.spi;
 
 import org.commonjava.storage.pathmapped.model.Filesystem;
 
+import java.util.Collection;
+
 public interface PathDBAdmin
 {
     Filesystem getFilesystem(String filesystem);
+
+    Collection<? extends Filesystem> getFilesystems();
 }

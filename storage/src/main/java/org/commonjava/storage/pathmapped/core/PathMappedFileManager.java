@@ -32,15 +32,12 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.security.NoSuchAlgorithmException;
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
+import static java.util.Collections.emptyList;
 import static org.apache.commons.lang.StringUtils.isBlank;
 import static org.commonjava.storage.pathmapped.util.PathMapUtils.ROOT_DIR;
 
@@ -376,6 +373,14 @@ public class PathMappedFileManager implements Closeable
             return ((PathDBAdmin)pathDB).getFilesystem(filesystem);
         }
         return null;
+    }
+
+    public Collection<? extends Filesystem> getFilesystems()
+    {
+        if (pathDB instanceof PathDBAdmin ) {
+            return ((PathDBAdmin)pathDB).getFilesystems();
+        }
+        return emptyList();
     }
 
     @Override

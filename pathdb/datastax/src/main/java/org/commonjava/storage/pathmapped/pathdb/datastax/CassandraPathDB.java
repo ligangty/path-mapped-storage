@@ -864,4 +864,15 @@ public class CassandraPathDB
         ResultSet result = session.execute( preparedFilesystemList.bind() );
         return filesystemMapper.map(result).all();
     }
+
+    @Override
+    public void purgeFilesystem( Filesystem filesystem )
+    {
+        // Only purge empty filesystem
+        if ( filesystem.getFileCount() == 0 )
+        {
+            logger.info( "Purge filesystem: {}", filesystem );
+            filesystemMapper.delete( filesystem.getFilesystem() );
+        }
+    }
 }

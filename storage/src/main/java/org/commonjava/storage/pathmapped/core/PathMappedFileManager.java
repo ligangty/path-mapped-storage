@@ -383,6 +383,13 @@ public class PathMappedFileManager implements Closeable
         return emptyList();
     }
 
+    public void purgeFilesystem( Filesystem filesystem )
+    {
+        if (pathDB instanceof PathDBAdmin ) {
+            ((PathDBAdmin)pathDB).purgeFilesystem( filesystem );
+        }
+    }
+
     @Override
     public void close() throws IOException
     {

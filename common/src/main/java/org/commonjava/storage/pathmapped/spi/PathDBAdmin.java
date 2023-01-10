@@ -24,4 +24,10 @@ public interface PathDBAdmin
     Filesystem getFilesystem(String filesystem);
 
     Collection<? extends Filesystem> getFilesystems();
+
+    /**
+     * This method is to remove empty filesystem. If the file count is not zero, the operation will be ignored.
+     * @param filesystem
+     */
+    void purgeFilesystem( Filesystem filesystem );
 }

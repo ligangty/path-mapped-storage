@@ -353,7 +353,7 @@ public class PathMappedFileManager implements Closeable
                 boolean result = physicalStore.delete( fileInfo );
                 if ( result )
                 {
-                    logger.debug( "Delete from physicalStore, fileInfo: {}", fileInfo );
+                    logger.info( "Delete from physicalStore, fileInfo: {}", fileInfo );
                     pathDB.removeFromReclaim( reclaim );
                 }
                 gcResults.put( fileInfo, result );

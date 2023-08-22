@@ -170,11 +170,10 @@ public class CassandraPathDB
 
         preparedReverseMapIncrement =
                         session.prepare( "UPDATE " + keyspace + ".reversemap SET paths = paths + ? WHERE fileid=?;" );
-        preparedReverseMapIncrement.setConsistencyLevel( ONE );
 
         preparedReverseMapReduction =
                         session.prepare( "UPDATE " + keyspace + ".reversemap SET paths = paths - ? WHERE fileid=?;" );
-        preparedReverseMapReduction.setConsistencyLevel( ONE );
+        preparedReverseMapReduction.setConsistencyLevel( QUORUM );
 
         preparedFilesystemIncrement =
                 session.prepare("UPDATE " + keyspace + ".filesystem SET filecount=filecount+?, size=size+? WHERE filesystem=?;" );
@@ -518,14 +517,20 @@ public class CassandraPathDB
             final FileChecksum existing = fileChecksumMapper.get( checksum );
             if ( existing != null )
             {
-                logger.debug( "File checksum exists, use existing file storage" );
+                final String existingStorage = existing.getStorage();
+                logger.debug( "File checksum exists, use existing file: {}", existingStorage );
+
                 isDuplicateFile = true;
-                final String deprecatedStorage = pathMap.getFileStorage();
-                pathMap.setFileStorage( existing.getStorage() );
+                final String curStorage = pathMap.getFileStorage();
+                pathMap.setFileStorage( existingStorage );
                 pathMap.setFileId( existing.getFileId() );
-                // Mark the generated file storage path as reclaimed to remove it.
-                final String tempFileId = PathMapUtils.getRandomFileId();
-                asyncJobExecutor.execute(() -> reclaim( tempFileId, deprecatedStorage, checksum ));
+
+                // Reclaim the curStorage if not equals to existing one
+                if ( !curStorage.equals(existingStorage) )
+                {
+                    String tempFileId = PathMapUtils.getRandomFileId();
+                    asyncJobExecutor.execute(() -> reclaim( tempFileId, curStorage, checksum ));
+                }
             }
             else
             {
@@ -619,7 +624,7 @@ public class CassandraPathDB
             return false;
         }
 
-        logger.debug( "Delete pathMap, {}", pathMap );
+        logger.info( "Delete pathMap, {}", pathMap );
         pathMapMapper.delete( pathMap.getFileSystem(), pathMap.getParentPath(), pathMap.getFilename() );
 
         // update reverse mapping and filesystem
@@ -632,11 +637,13 @@ public class CassandraPathDB
 
     private void postDeletionActions(String fileSystem, String path, PathMap pathMap)
     {
-        boolean isDuplicateFileExists = true;
-        ReverseMap reverseMap = deleteFromReverseMap( pathMap.getFileId(), PathMapUtils.marshall( fileSystem, path ) );
+        boolean isDuplicateFile = true;
+        final String fileId = pathMap.getFileId();
+        deleteFromReverseMap( fileId, PathMapUtils.marshall( fileSystem, path ) );
+        ReverseMap reverseMap = reverseMapMapper.get( fileId );
         if ( reverseMap == null || reverseMap.getPaths() == null || reverseMap.getPaths().isEmpty() )
         {
-            isDuplicateFileExists = false;
+            isDuplicateFile = false;
             // clean checksum in checksum table when no file id referring it.
             String checksum = pathMap.getChecksum();
             if ( isNotBlank( checksum ) )
@@ -645,9 +652,9 @@ public class CassandraPathDB
                 fileChecksumMapper.delete( checksum );
             }
             // reclaim, but not remove from reverse table immediately (for race-detection/double-check)
-            reclaim( pathMap.getFileId(), pathMap.getFileStorage(), checksum );
+            reclaim( fileId, pathMap.getFileStorage(), checksum );
         }
-        if ( isDuplicateFileExists ) {
+        if ( isDuplicateFile ) {
             updateFilesystemDecrease(fileSystem, 1, 0);
         } else {
             updateFilesystemDecrease(fileSystem, 1, pathMap.getSize());
@@ -670,7 +677,7 @@ public class CassandraPathDB
         return empty;
     }
 
-    private ReverseMap deleteFromReverseMap( String fileId, String path )
+    private void deleteFromReverseMap( String fileId, String path )
     {
         logger.debug( "Delete from reverseMap, fileId: {}, path: {}", fileId, path );
         BoundStatement bound = preparedReverseMapReduction.bind();
@@ -679,7 +686,6 @@ public class CassandraPathDB
         bound.setSet( 0, reduction );
         bound.setString( 1, fileId );
         session.execute( bound );
-        return reverseMapMapper.get( fileId );
     }
 
     private void addToReverseMap( String fileId, String path )
@@ -736,7 +742,7 @@ public class CassandraPathDB
         Date expiration = pathMap.getExpiration();
         if ( expiration != null && expiration.getTime() < System.currentTimeMillis() )
         {
-            logger.debug( "File expired, fileSystem: {}, path: {}, expiration: {}", fileSystem, path, expiration );
+            logger.info( "File expired, fileSystem: {}, path: {}, expiration: {}", fileSystem, path, expiration );
             delete( fileSystem, path );
             return null;
         }

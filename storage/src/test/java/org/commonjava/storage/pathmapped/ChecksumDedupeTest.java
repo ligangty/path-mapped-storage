@@ -33,6 +33,29 @@ import static org.junit.Assert.fail;
 public class ChecksumDedupeTest
         extends AbstractCassandraFMTest
 {
+    /**
+     * Copy creates an entry which points to same physical file and has same checksum
+     * as the source entry. This test case checks the de-duplicate does not delete the physical file.
+     */
+    @Test
+    public void checksumDupe_copyFileTest()
+            throws Exception
+    {
+        final String targetFS = "test_A";
+
+        writeWithContent( TEST_FS, path1, simpleContent );
+        fileManager.copy( TEST_FS, path1, targetFS, path1 );
+
+        final String pathStorage = fileManager.getFileStoragePath( TEST_FS, path1 );
+        checkPhysicalFile( 1, 1, pathStorage );
+
+        checkRead( TEST_FS, path1, true, simpleContent );
+        checkRead( TEST_FS, path1, true, simpleContent );
+
+        // clean for next test
+        fileManager.delete(targetFS, path1);
+    }
+
     @Test
     public void checksumDupe()
             throws Exception

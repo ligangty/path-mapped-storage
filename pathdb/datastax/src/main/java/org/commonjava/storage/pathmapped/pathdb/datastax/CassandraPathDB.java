@@ -534,7 +534,7 @@ public class CassandraPathDB
             }
             else
             {
-                logger.debug( "File checksum not exists, marked current file {} as primary", pathMap );
+                logger.debug( "File checksum not exists, mark current file as primary: {}", pathMap );
                 fileChecksumMapper.save(
                         new DtxFileChecksum( checksum, pathMap.getFileId(), pathMap.getFileStorage() ) );
             }

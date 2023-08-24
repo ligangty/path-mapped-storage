@@ -22,6 +22,8 @@ public class DefaultPathMappedStorageConfig
 {
     private static final int DEFAULT_GC_BATCH_SIZE = 0; // no limit
 
+    private static final int MAX_GC_RESULT_SIZE = 10000;
+
     private final int DEFAULT_GC_INTERVAL_IN_MINUTES = 60;
 
     private final int DEFAULT_GC_GRACE_PERIOD_IN_HOURS = 24;
@@ -33,6 +35,8 @@ public class DefaultPathMappedStorageConfig
     private int gcIntervalInMinutes = DEFAULT_GC_INTERVAL_IN_MINUTES;
 
     private int gcBatchSize = DEFAULT_GC_BATCH_SIZE;
+
+    private int gcMaxResultSize = MAX_GC_RESULT_SIZE;
 
     private String fileChecksumAlgorithm = DEFAULT_FILE_CHECKSUM_ALGORITHM;
 
@@ -138,5 +142,16 @@ public class DefaultPathMappedStorageConfig
 
     public void setPhysicalFileExistenceCheckEnabled(boolean physicalFileExistenceCheckEnabled) {
         this.physicalFileExistenceCheckEnabled = physicalFileExistenceCheckEnabled;
+    }
+
+    @Override
+    public int getGcMaxResultSize()
+    {
+        return gcMaxResultSize;
+    }
+
+    public void setGcMaxResultSize(int gcMaxResultSize)
+    {
+        this.gcMaxResultSize = gcMaxResultSize;
     }
 }

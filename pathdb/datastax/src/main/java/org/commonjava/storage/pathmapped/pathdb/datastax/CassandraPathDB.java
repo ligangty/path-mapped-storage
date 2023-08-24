@@ -827,7 +827,6 @@ public class CassandraPathDB
         // timestamp data type is encoded as the number of milliseconds since epoch
         Date cur = new Date();
         long threshold = getReclaimThreshold( cur, config.getGCGracePeriodInHours() );
-        logger.debug( "listOrphanedFiles, cur: {}, threshold: {}, limit: {}", cur, new Date( threshold ), limit );
         ResultSet result;
         String baseQuery = "SELECT * FROM " + keyspace + ".reclaim WHERE partition = 0 AND deletion < ?";
         if ( limit > 0 )
@@ -838,8 +837,10 @@ public class CassandraPathDB
         {
             result = session.execute( baseQuery + ";", threshold );
         }
-        Result<DtxReclaim> ret = reclaimMapper.map( result );
-        return new ArrayList<>( ret.all() );
+        Result<DtxReclaim> dtxReclaims = reclaimMapper.map( result );
+        ArrayList<Reclaim> ret = new ArrayList<>( dtxReclaims.all() );
+        logger.info( "List orphaned files, cur: {}, threshold: {}, limit: {}, size: {}", cur, new Date( threshold ), limit, ret.size() );
+        return ret;
     }
 
     @Override

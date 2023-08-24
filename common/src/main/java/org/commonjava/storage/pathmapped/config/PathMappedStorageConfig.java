@@ -35,4 +35,6 @@ public interface PathMappedStorageConfig
     default boolean isPhysicalFileExistenceCheckEnabled() {
         return false;
     }
+
+    int getGcMaxResultSize();
 }

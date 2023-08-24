@@ -38,6 +38,7 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
 import static java.util.Collections.emptyList;
+import static java.util.Collections.emptyMap;
 import static org.apache.commons.lang.StringUtils.isBlank;
 import static org.commonjava.storage.pathmapped.util.PathMapUtils.ROOT_DIR;
 
@@ -328,36 +329,82 @@ public class PathMappedFileManager implements Closeable
         return pathDB.getStorageFile( fileSystem, path );
     }
 
+    /**
+     * Run gc safely because any exception would cause the scheduled task to fail and stop.
+     */
     public Map<FileInfo, Boolean> gc()
     {
+        try
+        {
+            return executeGC();
+        }
+        catch (Exception e)
+        {
+            logger.warn("Storage gc hit a problem but will continue to execute next time", e);
+        }
+        return emptyMap();
+    }
+
+    private Map<FileInfo, Boolean> executeGC() throws Exception
+    {
+        logger.info("Run storage gc.");
         Map<FileInfo, Boolean> gcResults = new HashMap<>();
+        Set<Reclaim> allReclaims = new HashSet<>();
         while ( true )
         {
             int batchSize = config.getGCBatchSize();
             List<Reclaim> reclaims = pathDB.listOrphanedFiles( batchSize );
+
+            // for debug
+            int duplicateReclaims = 0;
+            for (Reclaim r : reclaims) {
+                if (allReclaims.contains(r))
+                {
+                    logger.warn("Get duplicate reclaim: {}", r);
+                    duplicateReclaims += 1;
+                }
+            }
+            if (duplicateReclaims > 0)
+            {
+                logger.warn("Get duplicate reclaims(size: {}), break current gc", duplicateReclaims);
+                break;
+            }
+            allReclaims.addAll(reclaims);
+
             int size = reclaims.size();
-            logger.debug( "Get reclaims for GC, size: {}", size );
+            logger.info( "Get reclaims for GC, size: {}", size );
             if ( size <= 0 )
             {
+                logger.info("gc complete.");
                 break;
             }
             else if ( batchSize > 0 && size < batchSize )
             {
-                logger.debug( "Get reclaims but less than batch size {}. Break.", batchSize );
+                logger.info( "Reclaims size less than batch size {}. Break current gc.", batchSize );
                 break;
             }
-            reclaims.forEach( ( reclaim ) -> {
+            reclaims.forEach( reclaim -> {
                 FileInfo fileInfo = new FileInfo();
                 fileInfo.setFileId( reclaim.getFileId() );
                 fileInfo.setFileStorage( reclaim.getStorage() );
                 boolean result = physicalStore.delete( fileInfo );
                 if ( result )
                 {
-                    logger.info( "Delete from physicalStore, fileInfo: {}", fileInfo );
+                    logger.info( "Delete from physical store, fileInfo: {}", fileInfo );
                     pathDB.removeFromReclaim( reclaim );
                 }
-                gcResults.put( fileInfo, result );
-            } );
+                else
+                {
+                    logger.warn( "Delete from physical store failed, fileInfo: {}, reclaim: {}", fileInfo, reclaim );
+                }
+                gcResults.put(fileInfo, result);
+            });
+            int curSize = gcResults.size();
+            if ( curSize >= config.getGcMaxResultSize() )
+            {
+                logger.info("gc reach the max result size and complete, curSize: {}", curSize);
+                break;
+            }
         }
         return gcResults;
     }

@@ -349,27 +349,10 @@ public class PathMappedFileManager implements Closeable
     {
         logger.info("Run storage gc.");
         Map<FileInfo, Boolean> gcResults = new HashMap<>();
-        Set<Reclaim> allReclaims = new HashSet<>();
         while ( true )
         {
             int batchSize = config.getGCBatchSize();
             List<Reclaim> reclaims = pathDB.listOrphanedFiles( batchSize );
-
-            // for debug
-            int duplicateReclaims = 0;
-            for (Reclaim r : reclaims) {
-                if (allReclaims.contains(r))
-                {
-                    logger.warn("Get duplicate reclaim: {}", r);
-                    duplicateReclaims += 1;
-                }
-            }
-            if (duplicateReclaims > 0)
-            {
-                logger.warn("Get duplicate reclaims(size: {}), break current gc", duplicateReclaims);
-                break;
-            }
-            allReclaims.addAll(reclaims);
 
             int size = reclaims.size();
             logger.info( "Get reclaims for GC, size: {}", size );

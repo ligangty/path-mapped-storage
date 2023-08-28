@@ -22,7 +22,7 @@ public class DefaultPathMappedStorageConfig
 {
     private static final int DEFAULT_GC_BATCH_SIZE = 0; // no limit
 
-    private static final int MAX_GC_RESULT_SIZE = 10000;
+    private static final int MAX_GC_RESULT_SIZE = 100000;
 
     private final int DEFAULT_GC_INTERVAL_IN_MINUTES = 60;
 

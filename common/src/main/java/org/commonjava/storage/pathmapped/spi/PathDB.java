@@ -54,7 +54,21 @@ public interface PathDB
 
     String getStorageFile( String fileSystem, String path );
 
+    /**
+     * Copy exact same entry to another file system.
+     */
     boolean copy( String fromFileSystem, String fromPath, String toFileSystem, String toPath );
+
+    /**
+     * Copy entry to another filesystem with specified creation and expiration.
+     */
+    boolean copy( String fromFileSystem, String fromPath, String toFileSystem, String toPath, Date creation, Date expiration );
+
+    /**
+     * Expire the path by specified expiration.
+     * @param expiration specified expiration. null means never expire.
+     */
+    void expire( String fileSystem, String path, Date expiration );
 
     void makeDirs( String fileSystem, String path );
 

@@ -142,6 +142,17 @@ public class MeasuredPathDB
     }
 
     @Override
+    public boolean copy(String fromFileSystem, String fromPath, String toFileSystem, String toPath, Date creation, Date expiration) {
+        return measure( () -> decorated.copy( fromFileSystem, fromPath, toFileSystem, toPath, creation, expiration ), "copy" );
+    }
+
+    @Override
+    public void expire(String fileSystem, String path, Date expiration)
+    {
+        measure( () -> decorated.expire( fileSystem, path, expiration ), "expire" );
+    }
+
+    @Override
     public void makeDirs( String fileSystem, String path )
     {
         measure( () -> decorated.makeDirs( fileSystem, path ), "makeDirs" );

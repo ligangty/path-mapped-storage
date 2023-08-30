@@ -26,7 +26,6 @@ import org.commonjava.storage.pathmapped.core.PathMappedFileManager;
 import org.commonjava.storage.pathmapped.pathdb.datastax.CassandraPathDB;
 import org.commonjava.storage.pathmapped.pathdb.datastax.model.DtxPathMap;
 import org.commonjava.storage.pathmapped.pathdb.datastax.model.DtxReverseMap;
-import org.commonjava.storage.pathmapped.spi.FileInfo;
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Before;
@@ -42,8 +41,8 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.TimeUnit;
 
-import static java.lang.Thread.sleep;
 import static org.commonjava.storage.pathmapped.pathdb.datastax.util.CassandraPathDBUtils.PROP_CASSANDRA_HOST;
 import static org.commonjava.storage.pathmapped.pathdb.datastax.util.CassandraPathDBUtils.PROP_CASSANDRA_KEYSPACE;
 import static org.commonjava.storage.pathmapped.pathdb.datastax.util.CassandraPathDBUtils.PROP_CASSANDRA_PORT;
@@ -166,12 +165,12 @@ public abstract class AbstractCassandraFMTest
     public void teardown()
     {
         clearData();
-        clearCommon();
+        //clearCommon();
         cleanAllData();
         closePathDB();
     }
 
-    private void cleanAllData()
+    protected void cleanAllData()
     {
         if ( pathDB != null )
         {
@@ -183,6 +182,7 @@ public abstract class AbstractCassandraFMTest
         }
     }
 
+/*
     private void clearCommon(){
         fileManager.delete( TEST_FS, path1 );
         fileManager.delete( TEST_FS, path2 );
@@ -199,6 +199,7 @@ public abstract class AbstractCassandraFMTest
             e.printStackTrace();
         }
     }
+*/
 
     void writeWithContent( OutputStream stream, String content )
     {
@@ -217,6 +218,18 @@ public abstract class AbstractCassandraFMTest
         try
         {
             writeWithContent( fileManager.openOutputStream( fileSystem, path ), content );
+        }
+        catch ( IOException e )
+        {
+            e.printStackTrace();
+        }
+    }
+
+    void writeWithContent(String fileSystem, String path, String content, long timeout, TimeUnit unit)
+    {
+        try
+        {
+            writeWithContent( fileManager.openOutputStream( fileSystem, path, timeout, unit ), content );
         }
         catch ( IOException e )
         {

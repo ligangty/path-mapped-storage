@@ -314,9 +314,20 @@ public class PathMappedFileManager implements Closeable
         return pathDB.isFile( fileSystem, path );
     }
 
+    @Deprecated
     public void copy( String fromFileSystem, String fromPath, String toFileSystem, String toPath )
     {
         pathDB.copy( fromFileSystem, fromPath, toFileSystem, toPath );
+    }
+
+    public void copy( String fromFileSystem, String fromPath, String toFileSystem, String toPath, Date creation, Date expiration )
+    {
+        pathDB.copy( fromFileSystem, fromPath, toFileSystem, toPath, creation, expiration );
+    }
+
+    public void expire( String fileSystem, String path, Date expiration )
+    {
+        pathDB.expire( fileSystem, path, expiration );
     }
 
     public void makeDirs( String fileSystem, String path )

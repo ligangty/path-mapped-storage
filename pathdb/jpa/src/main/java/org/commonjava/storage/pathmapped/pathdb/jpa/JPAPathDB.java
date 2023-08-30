@@ -311,6 +311,16 @@ public class JPAPathDB
     }
 
     @Override
+    public boolean copy(String fromFileSystem, String fromPath, String toFileSystem, String toPath, Date creation, Date expiration)
+    {
+        return copy( fromFileSystem, fromPath, toFileSystem, toPath );
+    }
+
+    @Override
+    public void expire(String fileSystem, String path, Date expiration) {
+    }
+
+    @Override
     public void makeDirs( String fileSystem, String path )
     {
         logger.debug( "Make dir, fileSystem: {}, path: {}", fileSystem, path );

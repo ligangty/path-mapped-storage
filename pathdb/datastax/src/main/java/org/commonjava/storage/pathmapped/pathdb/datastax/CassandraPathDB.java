@@ -87,7 +87,7 @@ public class CassandraPathDB
     private int replicationFactor = 1; // keyspace replica, default 1
 
     private PreparedStatement preparedExistQuery, preparedListQuery, preparedListCheckEmpty, preparedContainingQuery, preparedExistFileQuery,
-                    preparedReverseMapIncrement, preparedReverseMapReduction,
+            preparedUpdateExpiration, preparedReverseMapIncrement, preparedReverseMapReduction,
             preparedFilesystemIncrement, preparedFilesystemReduction, preparedFilesystemList;
 
     @Deprecated
@@ -164,6 +164,9 @@ public class CassandraPathDB
 
         preparedListCheckEmpty = session.prepare(
                         "SELECT count(*) FROM " + keyspace + ".pathmap WHERE filesystem=? and parentpath=?;" );
+
+        preparedUpdateExpiration = session.prepare( "UPDATE " + keyspace + ".pathmap SET expiration=? " +
+                "WHERE filesystem=? and parentpath=? and filename=?;" );
 
         preparedContainingQuery = session.prepare( "SELECT filesystem FROM " + keyspace
                                                                    + ".pathmap WHERE filesystem IN ? and parentpath=? and filename=?;" );
@@ -773,6 +776,47 @@ public class CassandraPathDB
                                  pathMap.getChecksum() );
         insert( target );
         return true;
+    }
+
+    @Override
+    public boolean copy( String fromFileSystem, String fromPath, String toFileSystem, String toPath,
+                         Date creation, Date expiration )
+    {
+        DtxPathMap pathMap = (DtxPathMap) getPathMap( fromFileSystem, fromPath );
+        if ( pathMap == null )
+        {
+            logger.warn( "Source not found, {}:{}", fromFileSystem, fromPath );
+            return false;
+        }
+
+        DtxPathMap target = (DtxPathMap) getPathMap( toFileSystem, toPath );
+        if ( target != null )
+        {
+            logger.info( "Target already exists, delete it. {}:{}", toFileSystem, toPath );
+            delete( toFileSystem, toPath );
+        }
+
+        String toParentPath = PathMapUtils.getParentPath( toPath );
+        String toFilename = PathMapUtils.getFilename( toPath );
+        target = new DtxPathMap( toFileSystem, toParentPath, toFilename, pathMap.getFileId(), creation,
+                expiration, pathMap.getSize(), pathMap.getFileStorage(),
+                pathMap.getChecksum() );
+        insert( target );
+        return true;
+    }
+
+    @Override
+    public void expire(String fileSystem, String path, Date expiration)
+    {
+        logger.debug( "Expire file, filesystem: {}, path: {}, expiration: {}", fileSystem, path, expiration );
+        String parentPath = PathMapUtils.getParentPath( path );
+        String filename = PathMapUtils.getFilename( path );
+        BoundStatement bound = preparedUpdateExpiration.bind();
+        bound.setTimestamp( 0, expiration );
+        bound.setString( 1, fileSystem );
+        bound.setString( 2, parentPath );
+        bound.setString( 3, filename );
+        session.execute( bound );
     }
 
     @Override

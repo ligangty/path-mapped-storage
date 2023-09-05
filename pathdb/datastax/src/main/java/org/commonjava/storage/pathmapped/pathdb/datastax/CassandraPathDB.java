@@ -808,7 +808,7 @@ public class CassandraPathDB
     @Override
     public void expire(String fileSystem, String path, Date expiration)
     {
-        logger.debug( "Expire file, filesystem: {}, path: {}, expiration: {}", fileSystem, path, expiration );
+        logger.debug( "Set file expiration, filesystem: {}, path: {}, expiration: {}", fileSystem, path, expiration );
         String parentPath = PathMapUtils.getParentPath( path );
         String filename = PathMapUtils.getFilename( path );
         BoundStatement bound = preparedUpdateExpiration.bind();

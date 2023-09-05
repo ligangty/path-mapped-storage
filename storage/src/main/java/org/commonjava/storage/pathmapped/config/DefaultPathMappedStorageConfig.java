@@ -16,6 +16,7 @@
 package org.commonjava.storage.pathmapped.config;
 
 import java.util.Map;
+import java.util.concurrent.TimeUnit;
 
 public class DefaultPathMappedStorageConfig
                 implements PathMappedStorageConfig
@@ -23,6 +24,8 @@ public class DefaultPathMappedStorageConfig
     private static final int DEFAULT_GC_BATCH_SIZE = 0; // no limit
 
     private static final int MAX_GC_RESULT_SIZE = 100000;
+
+    private static final long DEFAULT_RESET_TIMEOUT_FOR_ACCESSING = TimeUnit.HOURS.toMillis( 12 );
 
     private final int DEFAULT_GC_INTERVAL_IN_MINUTES = 60;
 
@@ -37,6 +40,8 @@ public class DefaultPathMappedStorageConfig
     private int gcBatchSize = DEFAULT_GC_BATCH_SIZE;
 
     private int gcMaxResultSize = MAX_GC_RESULT_SIZE;
+
+    private long resetTimeoutForAccessing = DEFAULT_RESET_TIMEOUT_FOR_ACCESSING;
 
     private String fileChecksumAlgorithm = DEFAULT_FILE_CHECKSUM_ALGORITHM;
 
@@ -153,5 +158,16 @@ public class DefaultPathMappedStorageConfig
     public void setGcMaxResultSize(int gcMaxResultSize)
     {
         this.gcMaxResultSize = gcMaxResultSize;
+    }
+
+    @Override
+    public long getResetTimeoutForAccessing()
+    {
+        return resetTimeoutForAccessing;
+    }
+
+    public void setResetTimeoutForAccessing(long resetTimeoutForAccessing)
+    {
+        this.resetTimeoutForAccessing = resetTimeoutForAccessing;
     }
 }

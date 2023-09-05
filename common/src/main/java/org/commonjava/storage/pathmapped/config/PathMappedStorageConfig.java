@@ -37,4 +37,9 @@ public interface PathMappedStorageConfig
     }
 
     int getGcMaxResultSize();
+
+    /**
+     * Extend file timeout in milliseconds for accessing (being accessed).
+     */
+    long getResetTimeoutForAccessing();
 }

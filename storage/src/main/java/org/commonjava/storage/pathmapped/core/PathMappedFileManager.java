@@ -101,7 +101,7 @@ public class PathMappedFileManager implements Closeable
 
     public InputStream openInputStream( String fileSystem, String path ) throws IOException
     {
-        String storageFile = pathDB.getStorageFile( fileSystem, path );
+        String storageFile = getStorageFileInternal( fileSystem, path );
         if ( storageFile == null )
         {
             throw new IOException( String.format(
@@ -114,6 +114,41 @@ public class PathMappedFileManager implements Closeable
                     ("Could not open input stream to for path %s - %s: path-mapped physical file does not exist.", fileSystem, path) );
         }
         return stream;
+    }
+
+    /**
+     * Get storage file if not expired. Delete the file and return null if expired.
+     * If 'resetTimeoutForAccessing' configured, reset timeout when the expiration is close to due date. This is
+     * to prevent commonly used files being expired too soon.
+     */
+    private String getStorageFileInternal( String fileSystem, String path )
+    {
+        final PathMap pathMap = getPathMap( fileSystem, path );
+        if ( pathMap != null )
+        {
+            final Date expiration = pathMap.getExpiration();
+            if ( expiration != null )
+            {
+                final long current = System.currentTimeMillis();
+                if ( expiration.getTime() < current ) // timeout
+                {
+                    logger.info("File expired, filesystem: {}, path: {}, expiration: {}", fileSystem, path, expiration);
+                    delete(fileSystem, path);
+                    return null;
+                }
+                final long resetTimeout = config.getResetTimeoutForAccessing();
+                if ( resetTimeout > 0 &&
+                        (expiration.getTime() - current) < resetTimeout )
+                {
+                    Date newExpiration = new Date(expiration.getTime() + resetTimeout);
+                    logger.debug("Extend file expiration for accessing, filesystem: {}, path: {}, expiration: {}", fileSystem,
+                            path, newExpiration);
+                    expire( fileSystem, path, newExpiration );
+                }
+            }
+            return pathMap.getFileStorage();
+        }
+        return null;
     }
 
     public OutputStream openOutputStream( String fileSystem, String path ) throws IOException

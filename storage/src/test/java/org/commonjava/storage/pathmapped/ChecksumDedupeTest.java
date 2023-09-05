@@ -15,20 +15,16 @@
  */
 package org.commonjava.storage.pathmapped;
 
-import org.apache.commons.io.IOUtils;
 import org.hamcrest.CoreMatchers;
 import org.junit.Assert;
 import org.junit.Test;
 
 import java.io.IOException;
-import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.HashSet;
 import java.util.Set;
-
-import static org.junit.Assert.fail;
 
 public class ChecksumDedupeTest
         extends AbstractCassandraFMTest
@@ -201,27 +197,4 @@ public class ChecksumDedupeTest
         Thread.sleep( GC_WAIT_MS );
     }
 
-    private void checkRead( final String fileSys, final String path, final boolean exists,
-                            final String expected )
-    {
-        try (InputStream is = fileManager.openInputStream( fileSys, path ))
-        {
-            if ( exists )
-            {
-                Assert.assertThat( is, CoreMatchers.notNullValue() );
-                Assert.assertThat( IOUtils.toString( is ), CoreMatchers.equalTo( expected ) );
-            }
-            else
-            {
-                Assert.assertThat( is, CoreMatchers.nullValue() );
-            }
-        }
-        catch ( IOException e )
-        {
-            if ( exists || expected != null )
-            {
-                fail( "An existed file path can not be opened to read successfully!" );
-            }
-        }
-    }
 }

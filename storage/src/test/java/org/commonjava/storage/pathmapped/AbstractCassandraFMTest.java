@@ -26,11 +26,8 @@ import org.commonjava.storage.pathmapped.core.PathMappedFileManager;
 import org.commonjava.storage.pathmapped.pathdb.datastax.CassandraPathDB;
 import org.commonjava.storage.pathmapped.pathdb.datastax.model.DtxPathMap;
 import org.commonjava.storage.pathmapped.pathdb.datastax.model.DtxReverseMap;
-import org.junit.After;
-import org.junit.AfterClass;
-import org.junit.Before;
-import org.junit.BeforeClass;
-import org.junit.Rule;
+import org.hamcrest.CoreMatchers;
+import org.junit.*;
 import org.junit.rules.TemporaryFolder;
 import org.junit.rules.TestName;
 import org.slf4j.Logger;
@@ -38,6 +35,7 @@ import org.slf4j.LoggerFactory;
 
 import java.io.File;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.OutputStream;
 import java.util.HashMap;
 import java.util.Map;
@@ -46,6 +44,7 @@ import java.util.concurrent.TimeUnit;
 import static org.commonjava.storage.pathmapped.pathdb.datastax.util.CassandraPathDBUtils.PROP_CASSANDRA_HOST;
 import static org.commonjava.storage.pathmapped.pathdb.datastax.util.CassandraPathDBUtils.PROP_CASSANDRA_KEYSPACE;
 import static org.commonjava.storage.pathmapped.pathdb.datastax.util.CassandraPathDBUtils.PROP_CASSANDRA_PORT;
+import static org.junit.Assert.fail;
 
 public abstract class AbstractCassandraFMTest
 {
@@ -234,6 +233,29 @@ public abstract class AbstractCassandraFMTest
         catch ( IOException e )
         {
             e.printStackTrace();
+        }
+    }
+
+    protected void checkRead( final String fileSys, final String path, final boolean exists, final String expected )
+    {
+        try (InputStream is = fileManager.openInputStream( fileSys, path ))
+        {
+            if ( exists )
+            {
+                Assert.assertThat( is, CoreMatchers.notNullValue() );
+                Assert.assertThat( IOUtils.toString( is ), CoreMatchers.equalTo( expected ) );
+            }
+            else
+            {
+                Assert.assertThat( is, CoreMatchers.nullValue() );
+            }
+        }
+        catch ( IOException e )
+        {
+            if ( exists || expected != null )
+            {
+                fail( "Open input stream failed, " + e.getMessage() );
+            }
         }
     }
 

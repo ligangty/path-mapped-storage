@@ -56,6 +56,7 @@ import java.util.stream.Collectors;
 import static com.datastax.driver.core.ConsistencyLevel.*;
 import static java.util.Collections.emptySet;
 import static org.apache.commons.lang.StringUtils.isNotBlank;
+import static org.commonjava.storage.pathmapped.pathdb.datastax.util.CassandraPathDBUtils.getHoursInDay;
 import static org.commonjava.storage.pathmapped.spi.PathDB.FileType.*;
 import static org.commonjava.storage.pathmapped.util.PathMapUtils.ROOT_DIR;
 
@@ -870,16 +871,17 @@ public class CassandraPathDB
     {
         // timestamp data type is encoded as the number of milliseconds since epoch
         Date cur = new Date();
+        int partition = getHoursInDay( cur );
         long threshold = getReclaimThreshold( cur, config.getGCGracePeriodInHours() );
         ResultSet result;
-        String baseQuery = "SELECT * FROM " + keyspace + ".reclaim WHERE partition = 0 AND deletion < ?";
+        String baseQuery = "SELECT * FROM " + keyspace + ".reclaim WHERE partition = ? AND deletion < ?";
         if ( limit > 0 )
         {
-            result = session.execute( baseQuery + " limit ?;", threshold, limit );
+            result = session.execute( baseQuery + " limit ?;", partition, threshold, limit );
         }
         else
         {
-            result = session.execute( baseQuery + ";", threshold );
+            result = session.execute( baseQuery + ";", partition, threshold );
         }
         Result<DtxReclaim> dtxReclaims = reclaimMapper.map( result );
         ArrayList<Reclaim> ret = new ArrayList<>( dtxReclaims.all() );

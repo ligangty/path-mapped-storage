@@ -15,6 +15,9 @@
  */
 package org.commonjava.storage.pathmapped.pathdb.datastax.util;
 
+import java.util.Calendar;
+import java.util.Date;
+
 public class CassandraPathDBUtils
 {
     public static final String PROP_CASSANDRA_HOST = "cassandra_host";
@@ -97,5 +100,13 @@ public class CassandraPathDBUtils
                         + "storage varchar,"
                         + "PRIMARY KEY (checksum)"
                         + ");";
+    }
+
+    // Since Date.getHours is deprecated, we use this to replace it.
+    public static int getHoursInDay( Date date )
+    {
+        Calendar calendar = Calendar.getInstance();
+        calendar.setTime( date );
+        return calendar.get( Calendar.HOUR_OF_DAY );
     }
 }

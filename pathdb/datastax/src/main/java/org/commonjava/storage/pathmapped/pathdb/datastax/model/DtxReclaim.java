@@ -24,11 +24,13 @@ import org.commonjava.storage.pathmapped.model.Reclaim;
 import java.util.Date;
 import java.util.Objects;
 
+import static org.commonjava.storage.pathmapped.pathdb.datastax.util.CassandraPathDBUtils.getHoursInDay;
+
 @Table( name = "reclaim", readConsistency = "QUORUM", writeConsistency = "QUORUM" )
 public class DtxReclaim implements Reclaim
 {
     @PartitionKey
-    private int partition; // use fixed partition 0 in order to run SELECT fast
+    private int partition; // partition by hours in day (0~23)
 
     @ClusteringColumn(0)
     private Date deletion;
@@ -48,6 +50,7 @@ public class DtxReclaim implements Reclaim
 
     public DtxReclaim( String fileId, Date deletion, String storage, String checksum )
     {
+        this.partition = getHoursInDay( deletion );
         this.fileId = fileId;
         this.deletion = deletion;
         this.storage = storage;
@@ -61,6 +64,7 @@ public class DtxReclaim implements Reclaim
 
     public void setPartition( int partition )
     {
+        this.partition = partition;
     }
 
     @Override

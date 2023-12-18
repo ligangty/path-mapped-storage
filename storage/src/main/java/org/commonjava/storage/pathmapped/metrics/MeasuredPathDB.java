@@ -112,6 +112,12 @@ public class MeasuredPathDB
     }
 
     @Override
+    public boolean delete(String fileSystem, String path, boolean force)
+    {
+        return measure( () -> decorated.delete( fileSystem, path, force ), "delete" );
+    }
+
+    @Override
     public Set<String> getFileSystemContaining( Collection<String> candidates, String path )
     {
         return measure( () -> decorated.getFileSystemContaining( candidates, path ), "getFileSystemContaining" );

@@ -181,7 +181,12 @@ public class PathMappedFileManager implements Closeable
 
     public boolean delete( String fileSystem, String path )
     {
-        return pathDB.delete( fileSystem, path );
+        return pathDB.delete( fileSystem, path, false );
+    }
+
+    public boolean delete( String fileSystem, String path, boolean force )
+    {
+        return pathDB.delete( fileSystem, path, force );
     }
 
     public String[] list( String fileSystem, String path )

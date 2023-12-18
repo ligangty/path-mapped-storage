@@ -239,6 +239,12 @@ public class JPAPathDB
         return true;
     }
 
+    @Override
+    public boolean delete(String fileSystem, String path, boolean force)
+    {
+        return delete( fileSystem, path );
+    }
+
     private void removeFromReverseMap( String fileSystem, String path, PathMap pathMap )
     {
         String fileId = pathMap.getFileId();

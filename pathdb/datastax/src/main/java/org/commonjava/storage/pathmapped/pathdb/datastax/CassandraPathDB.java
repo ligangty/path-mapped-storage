@@ -607,6 +607,12 @@ public class CassandraPathDB
     @Override
     public boolean delete( String fileSystem, String path )
     {
+        return delete( fileSystem, path, false );
+    }
+
+    @Override
+    public boolean delete( String fileSystem, String path, boolean force )
+    {
         PathMap pathMap = getPathMap( fileSystem, path );
         if ( pathMap == null )
         {
@@ -617,10 +623,10 @@ public class CassandraPathDB
         String fileId = pathMap.getFileId();
         if ( fileId == null )
         {
-            // can only remove empty dir
-            if ( isEmptyDirectory( fileSystem, path ) )
+            // force or empty dir
+            if ( force || isEmptyDirectory( fileSystem, path ) )
             {
-                logger.info( "Delete empty dir, {}", pathMap );
+                logger.info( "Delete dir (force: {}), {}", force, pathMap );
                 pathMapMapper.delete( pathMap.getFileSystem(), pathMap.getParentPath(), pathMap.getFilename() );
                 return true;
             }

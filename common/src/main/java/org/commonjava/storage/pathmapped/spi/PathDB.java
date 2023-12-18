@@ -50,7 +50,15 @@ public interface PathDB
 
     boolean isFile( String fileSystem, String path );
 
+    /**
+     * Safe delete. Non-empty directory is not allowed to delete to protect the dir/file relationship in db.
+     */
     boolean delete( String fileSystem, String path );
+
+    /**
+     * Force delete. Used when listing and purging a whole file system.
+     */
+    boolean delete( String fileSystem, String path, boolean force );
 
     String getStorageFile( String fileSystem, String path );
 

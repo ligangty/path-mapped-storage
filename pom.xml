@@ -30,7 +30,6 @@
 
     <packaging>pom</packaging>
     <modules>
-        <module>tool</module>
         <module>storage</module>
         <module>pathdb</module>
         <module>common</module>

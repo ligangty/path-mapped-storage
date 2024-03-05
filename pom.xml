@@ -57,10 +57,18 @@
         <o11yphantVersion>1.4</o11yphantVersion>
         <h2Version>1.4.188</h2Version>
         <pmd.failOnViolation>false</pmd.failOnViolation>
+        <aws.java.sdk.version>2.21.20</aws.java.sdk.version>
     </properties>
 
     <dependencyManagement>
         <dependencies>
+            <dependency>
+                <groupId>software.amazon.awssdk</groupId>
+                <artifactId>bom</artifactId>
+                <version>${aws.java.sdk.version}</version>
+                <type>pom</type>
+                <scope>import</scope>
+            </dependency>
             <dependency>
                 <groupId>org.commonjava.util</groupId>
                 <artifactId>path-mapped-common</artifactId>

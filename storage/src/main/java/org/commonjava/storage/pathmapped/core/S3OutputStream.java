@@ -16,6 +16,7 @@ import java.io.ByteArrayInputStream;
 import java.io.OutputStream;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 public class S3OutputStream
                 extends OutputStream
@@ -30,6 +31,11 @@ public class S3OutputStream
      * The path (key) name within the bucket
      */
     private final String path;
+
+    /**
+     * The metadata for the object
+     */
+    private final Map<String, String> metadata;
 
     /**
      * The temporary buffer used for storing the chunks
@@ -68,9 +74,21 @@ public class S3OutputStream
      */
     public S3OutputStream( S3Client s3Client, String bucket, String path )
     {
+        this(s3Client, bucket, path, null);
+    }
+
+    /**
+     * Creates a new S3 OutputStream
+     *
+     * @param s3Client the AmazonS3 client
+     * @param path     path within the bucket
+     */
+    public S3OutputStream( S3Client s3Client, String bucket, String path, Map<String, String> metadata )
+    {
         this.s3Client = s3Client;
         this.bucket = bucket;
         this.path = path;
+        this.metadata = metadata;
         buf = new byte[BUFFER_SIZE];
         position = 0;
         etags = new ArrayList<>();
@@ -169,10 +187,13 @@ public class S3OutputStream
                 CompletedMultipartUpload completedMultipartUpload =
                                 CompletedMultipartUpload.builder().parts( completedParts ).build();
                 CompleteMultipartUploadRequest completeMultipartUploadRequest = CompleteMultipartUploadRequest.builder()
+                                                                                                              .bucket(
+                                                                                                                      bucket )
                                                                                                               .key( path )
-                                                                                                              .uploadId( uploadId )
+                                                                                                              .uploadId(
+                                                                                                                      uploadId )
                                                                                                               .multipartUpload(
-                                                                                                                              completedMultipartUpload )
+                                                                                                                      completedMultipartUpload )
                                                                                                               .build();
                 s3Client.completeMultipartUpload( completeMultipartUploadRequest );
             }
@@ -203,11 +224,14 @@ public class S3OutputStream
     {
         if ( uploadId == null )
         {
-            CreateMultipartUploadRequest uploadRequest = CreateMultipartUploadRequest.builder()
-                                                                                     .bucket( this.bucket )
-                                                                                     .key( path )
-                                                                                     .build();
-            CreateMultipartUploadResponse multipartUpload = s3Client.createMultipartUpload( uploadRequest );
+            CreateMultipartUploadRequest.Builder uploadRequestBuilder =
+                    CreateMultipartUploadRequest.builder().bucket( this.bucket ).key( path );
+            if ( metadata != null && !metadata.isEmpty() )
+            {
+                uploadRequestBuilder.metadata( metadata );
+            }
+            CreateMultipartUploadResponse multipartUpload =
+                    s3Client.createMultipartUpload( uploadRequestBuilder.build() );
             uploadId = multipartUpload.uploadId();
         }
         uploadPart();
@@ -217,6 +241,7 @@ public class S3OutputStream
     protected void uploadPart()
     {
         UploadPartRequest uploadRequest = UploadPartRequest.builder()
+                                                           .bucket( bucket )
                                                            .key( path )
                                                            .uploadId( uploadId )
                                                            .partNumber( etags.size() + 1 )

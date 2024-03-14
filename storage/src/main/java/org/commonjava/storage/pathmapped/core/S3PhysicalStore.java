@@ -33,12 +33,6 @@ import static org.commonjava.storage.pathmapped.util.PathMapUtils.getRandomFileI
 
 public class S3PhysicalStore implements PhysicalStore
 {
-    private static final int LEVEL_1_DIR_LENGTH = 2;
-
-    private static final int LEVEL_2_DIR_LENGTH = 2;
-
-    private static final int DIR_LENGTH = LEVEL_1_DIR_LENGTH + LEVEL_2_DIR_LENGTH;
-
     private final Logger logger = LoggerFactory.getLogger( getClass() );
 
     private final S3Client s3Client;
@@ -54,18 +48,20 @@ public class S3PhysicalStore implements PhysicalStore
     public FileInfo getFileInfo( String fileSystem, String path )
     {
         String id = getRandomFileId();
-        String dir = getStorageDir( id );
         FileInfo fileInfo = new FileInfo();
         fileInfo.setFileId( id );
-        fileInfo.setFileStorage( Paths.get( dir, id ).toString() );
+        fileInfo.setFileStorage( getS3Key( fileSystem, path ) );
         return fileInfo;
     }
 
-    private String getStorageDir( String fileId )
+    /**
+     * Some characters that might require special handling, like Colon ':'. This default impl is replacing colon
+     * with slash '/'. Derived classes can override the default behavior.
+     * @return valid S3 key string
+     */
+    protected String getS3Key( String filesystem, String path )
     {
-        String folder = fileId.substring( 0, LEVEL_1_DIR_LENGTH );
-        String subFolder = fileId.substring( LEVEL_1_DIR_LENGTH, DIR_LENGTH );
-        return folder + "/" + subFolder;
+        return Paths.get( filesystem.replaceAll(":", "/"), path ).toString();
     }
 
     @Override

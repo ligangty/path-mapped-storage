@@ -29,6 +29,7 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.nio.file.Paths;
 
+import static java.lang.System.currentTimeMillis;
 import static org.commonjava.storage.pathmapped.util.PathMapUtils.getRandomFileId;
 
 public class S3PhysicalStore implements PhysicalStore
@@ -55,13 +56,17 @@ public class S3PhysicalStore implements PhysicalStore
     }
 
     /**
-     * Some characters that might require special handling, like Colon ':'. This default impl is replacing colon
-     * with slash '/'. Derived classes can override the default behavior.
+     * Some characters that might require special handling, like Colon ':'. This default impl replaces colon
+     * with slash '/' and appends a timestamp to path to avoid conflict. (e.g, if a file is deleted and put again,
+     * the new physical file can be removed by GC after the grace period if the 'storagefile' are same).
+     * The timestamp uses the last 5 digital of current-time-millis.
      * @return valid S3 key string
      */
     protected String getS3Key( String filesystem, String path )
     {
-        return Paths.get( filesystem.replaceAll(":", "/"), path ).toString();
+        String tmp = Long.toString( currentTimeMillis() );
+        String timestamp = tmp.substring( tmp.length() - 5 );
+        return Paths.get( filesystem.replaceAll(":", "/"), path + "." + timestamp ).toString();
     }
 
     @Override

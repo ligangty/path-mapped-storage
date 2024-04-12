@@ -21,7 +21,7 @@ import java.util.concurrent.TimeUnit;
 public class DefaultPathMappedStorageConfig
                 implements PathMappedStorageConfig
 {
-    private static final int DEFAULT_GC_BATCH_SIZE = 0; // no limit
+    private static final int DEFAULT_GC_BATCH_SIZE = 100;
 
     private static final int MAX_GC_RESULT_SIZE = 100000;
 

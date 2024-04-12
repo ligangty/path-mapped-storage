@@ -36,6 +36,7 @@ import java.util.*;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import static java.util.Collections.emptyList;
 import static java.util.Collections.emptyMap;
@@ -398,7 +399,7 @@ public class PathMappedFileManager implements Closeable
 
     private Map<FileInfo, Boolean> executeGC() throws Exception
     {
-        logger.info("Run storage gc.");
+        logger.info("Run storage gc...");
         Map<FileInfo, Boolean> gcResults = new HashMap<>();
         while ( true )
         {
@@ -406,17 +407,13 @@ public class PathMappedFileManager implements Closeable
             List<Reclaim> reclaims = pathDB.listOrphanedFiles( batchSize );
 
             int size = reclaims.size();
-            logger.info( "Get reclaims for GC, size: {}", size );
+            logger.info( "Get reclaims for gc, size: {}", size );
             if ( size <= 0 )
             {
-                logger.info("gc complete.");
+                logger.info("Gc complete.");
                 break;
             }
-            else if ( batchSize > 0 && size < batchSize )
-            {
-                logger.info( "Reclaims size less than batch size {}. Break current gc.", batchSize );
-                break;
-            }
+            final AtomicBoolean physicalStoreError = new AtomicBoolean( false );
             reclaims.forEach( reclaim -> {
                 FileInfo fileInfo = new FileInfo();
                 fileInfo.setFileId( reclaim.getFileId() );
@@ -430,13 +427,20 @@ public class PathMappedFileManager implements Closeable
                 else
                 {
                     logger.warn( "Delete from physical store failed, fileInfo: {}, reclaim: {}", fileInfo, reclaim );
+                    physicalStoreError.set( true );
                 }
                 gcResults.put(fileInfo, result);
             });
+            if ( physicalStoreError.get() )
+            {
+                // Break to avoid infinite loop. The listOrphanedFiles may fetch duplicated entries in this case.
+                logger.info("Gc hit physical store error. Break current gc. gcResults: {}", gcResults);
+                break;
+            }
             int curSize = gcResults.size();
             if ( curSize >= config.getGcMaxResultSize() )
             {
-                logger.info("gc reach the max result size and complete, curSize: {}", curSize);
+                logger.info("Gc reach the max result size and complete, curSize: {}", curSize);
                 break;
             }
         }

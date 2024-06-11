@@ -17,10 +17,10 @@ package org.commonjava.storage.pathmapped.pathdb.jpa.model;
 
 import org.commonjava.storage.pathmapped.model.ReverseMap;
 
-import javax.persistence.Column;
-import javax.persistence.EmbeddedId;
-import javax.persistence.Entity;
-import javax.persistence.Table;
+import jakarta.persistence.Column;
+import jakarta.persistence.EmbeddedId;
+import jakarta.persistence.Entity;
+import jakarta.persistence.Table;
 import java.util.HashSet;
 import java.util.Objects;
 import java.util.Set;

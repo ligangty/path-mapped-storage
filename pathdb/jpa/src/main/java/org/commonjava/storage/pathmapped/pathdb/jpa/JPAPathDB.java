@@ -15,6 +15,7 @@
  */
 package org.commonjava.storage.pathmapped.pathdb.jpa;
 
+import org.commonjava.storage.pathmapped.model.FileChecksum;
 import org.commonjava.storage.pathmapped.pathdb.jpa.model.JpaPathKey;
 import org.commonjava.storage.pathmapped.pathdb.jpa.model.JpaPathMap;
 import org.commonjava.storage.pathmapped.pathdb.jpa.model.JpaReclaim;
@@ -54,6 +55,18 @@ public class JPAPathDB
     {
         factory = Persistence.createEntityManagerFactory( persistenceUnitName );
         entitymanager = factory.createEntityManager();
+    }
+
+    @Override
+    public FileChecksum getFileChecksum( String checksum )
+    {
+        return null;
+    }
+
+    @Override
+    public Set<String> getPathsByFileId( String fileId )
+    {
+        return null;
     }
 
     public List<PathMap> list( String fileSystem, String path, FileType fileType )

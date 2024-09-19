@@ -934,4 +934,21 @@ public class CassandraPathDB
             filesystemMapper.delete( filesystem.getFilesystem() );
         }
     }
+
+    @Override
+    public FileChecksum getFileChecksum( String checksum )
+    {
+        return fileChecksumMapper.get( checksum );
+    }
+
+    @Override
+    public Set<String> getPathsByFileId( String fileId )
+    {
+        ReverseMap reverseMap = reverseMapMapper.get( fileId );
+        if ( reverseMap != null )
+        {
+            return reverseMap.getPaths();
+        }
+        return emptySet();
+    }
 }

@@ -16,6 +16,7 @@
 package org.commonjava.storage.pathmapped.metrics;
 
 import org.commonjava.o11yphant.metrics.MetricsManager;
+import org.commonjava.storage.pathmapped.model.FileChecksum;
 import org.commonjava.storage.pathmapped.model.PathMap;
 import org.commonjava.storage.pathmapped.model.Reclaim;
 import org.commonjava.storage.pathmapped.spi.PathDB;
@@ -43,6 +44,18 @@ public class MeasuredPathDB
         this.decorated = decorated;
         this.metricsManager = metricsManager;
         this.metricPrefix = metricPrefix;
+    }
+
+    @Override
+    public FileChecksum getFileChecksum( String checksum )
+    {
+        return measure( () -> decorated.getFileChecksum( checksum ), "getFileChecksum" );
+    }
+
+    @Override
+    public Set<String> getPathsByFileId( String fileId )
+    {
+        return measure( () -> decorated.getPathsByFileId( fileId ), "getPathsByFileId" );
     }
 
     @Override

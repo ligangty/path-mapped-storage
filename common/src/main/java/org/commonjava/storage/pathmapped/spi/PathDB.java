@@ -15,6 +15,7 @@
  */
 package org.commonjava.storage.pathmapped.spi;
 
+import org.commonjava.storage.pathmapped.model.FileChecksum;
 import org.commonjava.storage.pathmapped.model.PathMap;
 import org.commonjava.storage.pathmapped.model.Reclaim;
 
@@ -26,6 +27,10 @@ import java.util.function.Consumer;
 
 public interface PathDB
 {
+    FileChecksum getFileChecksum( String checksum );
+
+    Set<String> getPathsByFileId( String fileId );
+
     enum FileType {
         all, file, dir;
     };

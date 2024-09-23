@@ -20,7 +20,7 @@
     <parent>
         <artifactId>path-mapped</artifactId>
         <groupId>org.commonjava.util</groupId>
-        <version>2.9</version>
+        <version>3.0-SNAPSHOT</version>
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
